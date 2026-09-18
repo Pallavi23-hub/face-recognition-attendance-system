@@ -1,1414 +1,2408 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Smart Face Attendance System</title>
 
     <style>
+
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            color: #222;
-        }
-
-        header {
-            background: #1f2937;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-
-        header h1 {
-            margin-bottom: 8px;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 1000px;
-            margin: 30px auto;
-        }
-
-        .card {
-            background: white;
-            padding: 25px;
-            margin-bottom: 25px;
-            border-radius: 12px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0 15px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 15px;
+            background: #f5f7fb;
+            color: #1f2937;
         }
 
         button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 6px;
             cursor: pointer;
-            margin: 5px;
+        }
+
+        /* =========================
+           LOGIN
+        ========================= */
+
+        #authPage {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(
+                135deg,
+                #1e3a8a,
+                #2563eb,
+                #38bdf8
+            );
+        }
+
+        .login-card {
+            width: 420px;
+            max-width: 92%;
+            background: white;
+            padding: 35px;
+            border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        .logo {
+            width: 65px;
+            height: 65px;
+            background: #2563eb;
+            color: white;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 15px;
+        }
+
+        .login-card h1 {
+            text-align: center;
+            font-size: 25px;
+        }
+
+        .login-card .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin: 10px 0 25px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: #2563eb;
+        }
+
+        .primary-btn {
+            width: 100%;
+            border: none;
+            padding: 13px;
+            border-radius: 8px;
             background: #2563eb;
             color: white;
             font-size: 15px;
+            font-weight: bold;
         }
 
-        button:hover {
-            opacity: 0.9;
+        .primary-btn:hover {
+            background: #1d4ed8;
         }
 
-        .danger {
+        .switch-auth {
+            text-align: center;
+            margin-top: 18px;
+            color: #6b7280;
+        }
+
+        .link-btn {
+            border: none;
+            background: none;
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* =========================
+           APP
+        ========================= */
+
+        #app {
+            display: none;
+            min-height: 100vh;
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: #111827;
+            color: white;
+            padding: 25px 15px;
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 10px 30px;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            background: #2563eb;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .brand h2 {
+            font-size: 17px;
+        }
+
+        .brand small {
+            color: #9ca3af;
+        }
+
+        .nav-title {
+            color: #6b7280;
+            font-size: 11px;
+            margin: 15px 10px 8px;
+            text-transform: uppercase;
+        }
+
+        .nav-item {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: #d1d5db;
+            padding: 13px 12px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #2563eb;
+            color: white;
+        }
+
+        .logout {
+            position: absolute;
+            bottom: 25px;
+            left: 15px;
+            width: calc(100% - 30px);
             background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
         }
 
-        .success {
+        /* =========================
+           MAIN
+        ========================= */
+
+        .main {
+            margin-left: 250px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 75px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+        }
+
+        .topbar h2 {
+            font-size: 21px;
+        }
+
+        .user-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* =========================
+           CARDS
+        ========================= */
+
+        .welcome {
+            background: linear-gradient(
+                135deg,
+                #1d4ed8,
+                #2563eb
+            );
+            color: white;
+            padding: 28px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .welcome h1 {
+            margin-bottom: 8px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns:
+                repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 22px;
+            border-radius: 13px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: #dbeafe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-card h3 {
+            font-size: 27px;
+            margin-top: 15px;
+        }
+
+        .stat-card p {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        /* =========================
+           CONTENT CARDS
+        ========================= */
+
+        .card {
+            background: white;
+            border-radius: 13px;
+            padding: 25px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 22px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-header h3 {
+            font-size: 18px;
+        }
+
+        /* =========================
+           FORMS
+        ========================= */
+
+        .form-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 5px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+        }
+
+        .btn {
+            border: none;
+            padding: 11px 18px;
+            border-radius: 7px;
+            color: white;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+        }
+
+        .btn-success {
             background: #16a34a;
         }
 
-        .secondary {
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
             background: #6b7280;
         }
 
-        #camera {
-            width: 100%;
-            max-width: 500px;
-            border-radius: 10px;
-            display: block;
-            margin: 15px auto;
-            background: black;
-        }
+        /* =========================
+           TABLE
+        ========================= */
 
-        #message,
-        #authMessage,
-        #studentMessage,
-        #faceMessage,
-        #attendanceMessage {
-            margin-top: 15px;
-            padding: 10px;
-            font-weight: bold;
-        }
-
-        .auth-box {
-            max-width: 450px;
-            margin: 50px auto;
-        }
-
-        .auth-box h2 {
-            text-align: center;
-        }
-
-        .auth-subtitle {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #666;
-        }
-
-        .auth-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .auth-buttons button {
-            flex: 1;
-            margin: 0;
-        }
-
-        .switch-text {
-            text-align: center;
-            margin-top: 20px;
-            color: #555;
-        }
-
-        .switch-text button {
-            background: none;
-            color: #2563eb;
-            padding: 0;
-            margin: 0;
-            font-weight: bold;
-        }
-
-        .user-info {
-            background: #e5e7eb;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        .table-container {
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
         }
 
         th,
         td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: center;
+            padding: 13px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            font-size: 14px;
         }
 
         th {
-            background: #1f2937;
-            color: white;
+            background: #f9fafb;
+            color: #374151;
         }
 
-        .hidden {
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .present {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* =========================
+           CAMERA
+        ========================= */
+
+        .camera-container {
+            text-align: center;
+        }
+
+        #camera {
+            width: 100%;
+            max-width: 650px;
+            background: black;
+            border-radius: 12px;
+            margin: 15px auto;
+        }
+
+        #canvas {
             display: none;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                width: 95%;
-            }
-
-            button {
-                width: 100%;
-                margin: 5px 0;
-            }
-
-            .auth-buttons {
-                display: block;
-            }
-
-            .auth-buttons button {
-                width: 100%;
-                margin: 5px 0;
-            }
-
-            table {
-                font-size: 12px;
-            }
-
-            th,
-            td {
-                padding: 8px;
-            }
+        .face-status {
+            padding: 12px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 8px;
+            margin: 10px 0;
         }
+
+        /* =========================
+           REPORT BOX
+        ========================= */
+
+        .report-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .report-box {
+            background: #f9fafb;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .report-box h2 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .report-box p {
+            color: #6b7280;
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media(max-width: 900px) {
+
+            .stats {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .report-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+        @media(max-width: 700px) {
+
+            .sidebar {
+                width: 70px;
+                padding: 20px 8px;
+            }
+
+            .brand h2,
+            .brand small,
+            .nav-title {
+                display: none;
+            }
+
+            .brand {
+                justify-content: center;
+            }
+
+            .nav-item {
+                text-align: center;
+                font-size: 0;
+            }
+
+            .nav-item::first-letter {
+                font-size: 20px;
+            }
+
+            .logout {
+                font-size: 0;
+            }
+
+            .logout::before {
+                content: "↪";
+                font-size: 20px;
+            }
+
+            .main {
+                margin-left: 70px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .topbar {
+                padding: 0 15px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <!-- HEADER -->
-    <header>
-        <h1>Face Recognition Attendance System</h1>
-        <p>Smart Attendance Management</p>
-    </header>
+
+<!-- =====================================================
+     LOGIN / REGISTER
+====================================================== -->
+
+<div id="authPage">
+
+    <div class="login-card">
+
+        <div class="logo">
+            👤
+        </div>
+
+        <h1 id="authTitle">
+            Welcome Back
+        </h1>
+
+        <p class="subtitle">
+            Smart Face Attendance System
+        </p>
 
 
-    <div class="container">
+        <!-- LOGIN -->
 
-        <!-- ==============================
-             LOGIN / REGISTER SECTION
-        =============================== -->
+        <div id="loginForm">
 
-        <div class="card auth-box" id="authSection">
+            <div class="input-group">
 
-            <!-- LOGIN -->
-            <div id="loginForm">
-
-                <h2>Login</h2>
-
-                <p class="auth-subtitle">
-                    Login to access the attendance system
-                </p>
+                <label>Email</label>
 
                 <input
                     type="email"
                     id="loginEmail"
-                    placeholder="Enter Email"
-                >
+                    placeholder="Enter your email">
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label>Password</label>
 
                 <input
                     type="password"
                     id="loginPassword"
-                    placeholder="Enter Password"
-                >
-
-                <div class="auth-buttons">
-
-                    <button id="loginBtn">
-                        Login
-                    </button>
-
-                </div>
-
-                <p id="loginMessage"></p>
-
-                <p class="switch-text">
-                    Don't have an account?
-
-                    <button id="showRegisterBtn">
-                        Register
-                    </button>
-                </p>
+                    placeholder="Enter your password">
 
             </div>
 
 
-            <!-- REGISTER -->
-            <div id="registerForm" class="hidden">
+            <button
+                class="primary-btn"
+                id="loginBtn">
 
-                <h2>Create Account</h2>
+                Login
 
-                <p class="auth-subtitle">
-                    Register for the attendance system
-                </p>
+            </button>
 
-                <input
-                    type="email"
-                    id="registerEmail"
-                    placeholder="Enter Email"
-                >
 
-                <input
-                    type="password"
-                    id="registerPassword"
-                    placeholder="Enter Password"
-                >
+            <p
+                class="message"
+                id="loginMessage">
+            </p>
 
-                <input
-                    type="password"
-                    id="confirmPassword"
-                    placeholder="Confirm Password"
-                >
 
-                <div class="auth-buttons">
+            <p class="switch-auth">
 
-                    <button id="registerBtn">
-                        Register
-                    </button>
+                Don't have an account?
 
-                </div>
+                <button
+                    class="link-btn"
+                    id="showRegister">
 
-                <p id="registerMessage"></p>
+                    Create Account
 
-                <p class="switch-text">
-                    Already have an account?
+                </button>
 
-                    <button id="showLoginBtn">
-                        Login
-                    </button>
-                </p>
-
-            </div>
+            </p>
 
         </div>
 
 
-        <!-- ==============================
-             DASHBOARD
-        =============================== -->
+        <!-- REGISTER -->
 
-        <div id="dashboardArea" class="hidden">
+        <div id="registerForm"
+             style="display:none;">
 
-            <!-- USER INFORMATION -->
+            <div class="input-group">
 
-            <div class="card">
-
-                <h2>Welcome to Dashboard</h2>
-
-                <div class="user-info">
-
-                    Logged in as:
-
-                    <strong id="loggedUser">
-                        -
-                    </strong>
-
-                </div>
-
-                <button
-                    class="danger"
-                    id="logoutBtn">
-                    Logout
-                </button>
-
-            </div>
-
-
-            <!-- STUDENT DETAILS -->
-
-            <div class="card">
-
-                <h2>Student Details</h2>
+                <label>Email</label>
 
                 <input
-                    type="text"
-                    id="studentName"
-                    placeholder="Student Name"
-                >
+                    type="email"
+                    id="registerEmail"
+                    placeholder="Enter your email">
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label>Password</label>
 
                 <input
-                    type="text"
-                    id="studentId"
-                    placeholder="Student ID"
-                >
+                    type="password"
+                    id="registerPassword"
+                    placeholder="Minimum 6 characters">
+
+            </div>
+
+
+            <div class="input-group">
+
+                <label>Confirm Password</label>
+
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    placeholder="Confirm password">
+
+            </div>
+
+
+            <button
+                class="primary-btn"
+                id="registerBtn">
+
+                Create Account
+
+            </button>
+
+
+            <p
+                class="message"
+                id="registerMessage">
+            </p>
+
+
+            <p class="switch-auth">
+
+                Already have an account?
 
                 <button
-                    class="success"
-                    id="saveStudentBtn">
-                    Save Student
+                    class="link-btn"
+                    id="showLogin">
+
+                    Login
+
                 </button>
 
-                <p id="studentMessage"></p>
-
-            </div>
-
-
-            <!-- FACE CAMERA -->
-
-            <div class="card">
-
-                <h2>Face Recognition</h2>
-
-                <p>
-                    Allow camera access and capture your face.
-                </p>
-
-                <video
-                    id="camera"
-                    autoplay
-                    playsinline>
-                </video>
-
-                <button id="startCameraBtn">
-                    Start Camera
-                </button>
-
-                <button
-                    class="secondary"
-                    id="captureBtn">
-                    Capture Face
-                </button>
-
-                <canvas
-                    id="canvas"
-                    class="hidden">
-                </canvas>
-
-                <p id="faceMessage"></p>
-
-            </div>
-
-
-            <!-- ATTENDANCE -->
-
-            <div class="card">
-
-                <h2>Mark Attendance</h2>
-
-                <p>
-                    Student:
-                    <strong id="displayStudentName">
-                        -
-                    </strong>
-                </p>
-
-                <p>
-                    Student ID:
-                    <strong id="displayStudentId">
-                        -
-                    </strong>
-                </p>
-
-                <button
-                    class="success"
-                    id="attendanceBtn">
-                    Mark Attendance
-                </button>
-
-                <p id="attendanceMessage"></p>
-
-            </div>
-
-
-            <!-- ATTENDANCE DASHBOARD -->
-
-            <div class="card">
-
-                <h2>Attendance Dashboard</h2>
-
-                <button id="loadAttendanceBtn">
-                    Load Attendance
-                </button>
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Name</th>
-
-                            <th>Student ID</th>
-
-                            <th>Date</th>
-
-                            <th>Time</th>
-
-                            <th>Status</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody id="attendanceTable">
-
-                    </tbody>
-
-                </table>
-
-            </div>
+            </p>
 
         </div>
 
     </div>
 
-
-    <!-- ==============================
-         FIREBASE SCRIPT
-    =============================== -->
-
-    <script type="module">
-
-        /* ==============================
-           FIREBASE IMPORTS
-        ============================== */
-
-        import {
-            initializeApp
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+</div>
 
 
-        import {
-            getAuth,
-            setPersistence,
-            browserSessionPersistence,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            signOut,
-            onAuthStateChanged
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<!-- =====================================================
+     APPLICATION
+====================================================== -->
+
+<div id="app">
 
 
-        import {
-            getFirestore,
-            collection,
-            addDoc,
-            getDocs,
-            query,
-            orderBy,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                👤
+            </div>
+
+            <div>
+
+                <h2>SmartAttend</h2>
+
+                <small>Management</small>
+
+            </div>
+
+        </div>
 
 
-        /* ==============================
-           FIREBASE CONFIG
-        =============================== */
-
-        const firebaseConfig = {
-
-            apiKey:
-                "AIzaSyC8KMuO0yg9gN4MD3Y3CV8YNWsKCvV8L-Y",
-
-            authDomain:
-                "face-recognition-attenda-328c0.firebaseapp.com",
-
-            projectId:
-                "face-recognition-attenda-328c0",
-
-            storageBucket:
-                "face-recognition-attenda-328c0.firebasestorage.app",
-
-            messagingSenderId:
-                "289877248453",
-
-            appId:
-                "1:289877248453:web:30db49d06316a402e123ac"
-        };
+        <p class="nav-title">
+            Main Menu
+        </p>
 
 
-        /* ==============================
-           INITIALIZE FIREBASE
-        =============================== */
+        <button
+            class="nav-item active"
+            data-page="dashboard">
 
-        const app =
-            initializeApp(firebaseConfig);
+            📊 Dashboard
 
-        const auth =
-            getAuth(app);
-
-        const db =
-            getFirestore(app);
+        </button>
 
 
-        /* ==============================
-           SESSION LOGIN
-        =============================== */
+        <button
+            class="nav-item"
+            data-page="students">
 
-        setPersistence(
-            auth,
-            browserSessionPersistence
-        ).catch((error) => {
+            👨‍🎓 Students
 
-            console.error(
-                "Persistence error:",
-                error
-            );
+        </button>
+
+
+        <button
+            class="nav-item"
+            data-page="face">
+
+            📷 Face Registration
+
+        </button>
+
+
+        <button
+            class="nav-item"
+            data-page="attendance">
+
+            📋 Attendance
+
+        </button>
+
+
+        <button
+            class="nav-item"
+            data-page="reports">
+
+            📈 Reports
+
+        </button>
+
+
+        <p class="nav-title">
+            System
+        </p>
+
+
+        <button
+            class="nav-item"
+            data-page="profile">
+
+            👤 Profile
+
+        </button>
+
+
+        <button
+            class="nav-item"
+            data-page="settings">
+
+            ⚙️ Settings
+
+        </button>
+
+
+        <button
+            class="logout"
+            id="logoutBtn">
+
+            Logout
+
+        </button>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+
+        <!-- TOPBAR -->
+
+        <div class="topbar">
+
+            <div>
+
+                <h2 id="pageTitle">
+                    Dashboard
+                </h2>
+
+            </div>
+
+
+            <div class="user-area">
+
+                <div>
+
+                    <strong id="topUser">
+                        User
+                    </strong>
+
+                    <br>
+
+                    <small>
+                        Administrator
+                    </small>
+
+                </div>
+
+
+                <div class="avatar"
+                     id="avatar">
+
+                    U
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="content">
+
+
+            <!-- =================================================
+                 DASHBOARD
+            ================================================== -->
+
+            <section
+                class="page active"
+                id="dashboard">
+
+
+                <div class="welcome">
+
+                    <h1>
+                        Welcome to SmartAttend 👋
+                    </h1>
+
+                    <p>
+                        Manage students, face recognition
+                        and attendance from one place.
+                    </p>
+
+                </div>
+
+
+                <!-- STATISTICS -->
+
+                <div class="stats">
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+
+                            <div>
+
+                                <p>
+                                    Total Students
+                                </p>
+
+                                <h3 id="totalStudents">
+                                    0
+                                </h3>
+
+                            </div>
+
+                            <div class="stat-icon">
+                                👨‍🎓
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+
+                            <div>
+
+                                <p>
+                                    Present Today
+                                </p>
+
+                                <h3 id="presentToday">
+                                    0
+                                </h3>
+
+                            </div>
+
+                            <div class="stat-icon">
+                                ✅
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+
+                            <div>
+
+                                <p>
+                                    Absent Today
+                                </p>
+
+                                <h3 id="absentToday">
+                                    0
+                                </h3>
+
+                            </div>
+
+                            <div class="stat-icon">
+                                ❌
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <div class="stat-top">
+
+                            <div>
+
+                                <p>
+                                    Attendance Rate
+                                </p>
+
+                                <h3 id="attendanceRate">
+                                    0%
+                                </h3>
+
+                            </div>
+
+                            <div class="stat-icon">
+                                📈
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUICK ACTIONS -->
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Quick Actions
+                        </h3>
+
+                    </div>
+
+
+                    <button
+                        class="btn btn-primary"
+                        onclick="openPage('students')">
+
+                        ➕ Add Student
+
+                    </button>
+
+
+                    <button
+                        class="btn btn-success"
+                        onclick="openPage('face')">
+
+                        📷 Register Face
+
+                    </button>
+
+
+                    <button
+                        class="btn btn-secondary"
+                        onclick="openPage('attendance')">
+
+                        📋 View Attendance
+
+                    </button>
+
+                </div>
+
+
+                <!-- RECENT ATTENDANCE -->
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Recent Attendance
+                        </h3>
+
+                        <button
+                            class="btn btn-primary"
+                            onclick="loadAttendance()">
+
+                            Refresh
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="table-container">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        Student
+                                    </th>
+
+                                    <th>
+                                        ID
+                                    </th>
+
+                                    <th>
+                                        Date
+                                    </th>
+
+                                    <th>
+                                        Time
+                                    </th>
+
+                                    <th>
+                                        Status
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody
+                                id="recentAttendance">
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 STUDENTS
+            ================================================== -->
+
+            <section
+                class="page"
+                id="students">
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Add New Student
+                        </h3>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Student Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="studentName"
+                                placeholder="Enter student name">
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Student ID
+                            </label>
+
+                            <input
+                                type="text"
+                                id="studentId"
+                                placeholder="Example: STU001">
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Course
+                            </label>
+
+                            <input
+                                type="text"
+                                id="studentCourse"
+                                placeholder="Example: BCA">
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Semester
+                            </label>
+
+                            <select id="studentSemester">
+
+                                <option value="">
+                                    Select Semester
+                                </option>
+
+                                <option>
+                                    1st Semester
+                                </option>
+
+                                <option>
+                                    2nd Semester
+                                </option>
+
+                                <option>
+                                    3rd Semester
+                                </option>
+
+                                <option>
+                                    4th Semester
+                                </option>
+
+                                <option>
+                                    5th Semester
+                                </option>
+
+                                <option>
+                                    6th Semester
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <button
+                        class="btn btn-success"
+                        id="saveStudentBtn">
+
+                        Save Student
+
+                    </button>
+
+
+                    <p
+                        class="message"
+                        id="studentMessage">
+                    </p>
+
+                </div>
+
+
+                <!-- STUDENT LIST -->
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Student List
+                        </h3>
+
+                        <button
+                            class="btn btn-primary"
+                            onclick="loadStudents()">
+
+                            Refresh
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="table-container">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        Name
+                                    </th>
+
+                                    <th>
+                                        Student ID
+                                    </th>
+
+                                    <th>
+                                        Course
+                                    </th>
+
+                                    <th>
+                                        Semester
+                                    </th>
+
+                                    <th>
+                                        Email
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody
+                                id="studentTable">
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 FACE REGISTRATION
+            ================================================== -->
+
+            <section
+                class="page"
+                id="face">
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Face Registration
+                        </h3>
+
+                    </div>
+
+
+                    <div class="face-status">
+
+                        📷 Position the student's face
+                        clearly in front of the camera.
+
+                    </div>
+
+
+                    <div class="camera-container">
+
+                        <video
+                            id="camera"
+                            autoplay
+                            playsinline>
+                        </video>
+
+
+                        <canvas
+                            id="canvas">
+                        </canvas>
+
+
+                        <br>
+
+
+                        <button
+                            class="btn btn-primary"
+                            id="startCameraBtn">
+
+                            Start Camera
+
+                        </button>
+
+
+                        <button
+                            class="btn btn-success"
+                            id="captureBtn">
+
+                            Capture Face
+
+                        </button>
+
+
+                        <button
+                            class="btn btn-danger"
+                            id="stopCameraBtn">
+
+                            Stop Camera
+
+                        </button>
+
+
+                        <p
+                            class="message"
+                            id="faceMessage">
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <h3>
+                        Face Registration Status
+                    </h3>
+
+                    <br>
+
+                    <p>
+                        Face registration will be connected
+                        to the AI recognition service in the
+                        next development stage.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 ATTENDANCE
+            ================================================== -->
+
+            <section
+                class="page"
+                id="attendance">
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Mark Attendance
+                        </h3>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Student Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="attendanceName"
+                                placeholder="Student name">
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Student ID
+                            </label>
+
+                            <input
+                                type="text"
+                                id="attendanceId"
+                                placeholder="Student ID">
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="btn btn-success"
+                        id="attendanceBtn">
+
+                        ✅ Mark Present
+
+                    </button>
+
+
+                    <p
+                        class="message"
+                        id="attendanceMessage">
+                    </p>
+
+                </div>
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Attendance Records
+                        </h3>
+
+                        <button
+                            class="btn btn-primary"
+                            onclick="loadAttendance()">
+
+                            Load Records
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="table-container">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        Name
+                                    </th>
+
+                                    <th>
+                                        Student ID
+                                    </th>
+
+                                    <th>
+                                        Date
+                                    </th>
+
+                                    <th>
+                                        Time
+                                    </th>
+
+                                    <th>
+                                        Status
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody
+                                id="attendanceTable">
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 REPORTS
+            ================================================== -->
+
+            <section
+                class="page"
+                id="reports">
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            Attendance Reports
+                        </h3>
+
+                    </div>
+
+
+                    <div class="report-grid">
+
+
+                        <div class="report-box">
+
+                            <h2 id="reportStudents">
+                                0
+                            </h2>
+
+                            <p>
+                                Total Students
+                            </p>
+
+                        </div>
+
+
+                        <div class="report-box">
+
+                            <h2 id="reportPresent">
+                                0
+                            </h2>
+
+                            <p>
+                                Total Attendance
+                            </p>
+
+                        </div>
+
+
+                        <div class="report-box">
+
+                            <h2 id="reportRate">
+                                0%
+                            </h2>
+
+                            <p>
+                                Overall Rate
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card">
+
+                    <h3>
+                        Report Information
+                    </h3>
+
+                    <br>
+
+                    <p>
+                        Attendance reports are generated
+                        from the records stored in Firebase
+                        Firestore.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PROFILE
+            ================================================== -->
+
+            <section
+                class="page"
+                id="profile">
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            My Profile
+                        </h3>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Email
+                            </label>
+
+                            <input
+                                type="text"
+                                id="profileEmail"
+                                readonly>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                User ID
+                            </label>
+
+                            <input
+                                type="text"
+                                id="profileUid"
+                                readonly>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 SETTINGS
+            ================================================== -->
+
+            <section
+                class="page"
+                id="settings">
+
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <h3>
+                            System Settings
+                        </h3>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Attendance Status
+                        </label>
+
+                        <select id="statusSetting">
+
+                            <option value="Present">
+                                Present
+                            </option>
+
+                            <option value="Absent">
+                                Absent
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <button
+                        class="btn btn-primary"
+                        onclick="saveSettings()">
+
+                        Save Settings
+
+                    </button>
+
+
+                    <p
+                        class="message"
+                        id="settingsMessage">
+                    </p>
+
+                </div>
+
+            </section>
+
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- =====================================================
+     FIREBASE
+====================================================== -->
+
+<script type="module">
+
+
+    /* ===============================
+       IMPORT FIREBASE
+    ================================ */
+
+    import {
+        initializeApp
+    }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+
+    import {
+        getAuth,
+        setPersistence,
+        browserSessionPersistence,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signOut,
+        onAuthStateChanged
+    }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+    import {
+        getFirestore,
+        collection,
+        addDoc,
+        getDocs,
+        query,
+        orderBy,
+        serverTimestamp
+    }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    /* ===============================
+       FIREBASE CONFIG
+    ================================ */
+
+    const firebaseConfig = {
+
+        apiKey:
+            "AIzaSyC8KMuO0yg9gN4MD3Y3CV8YNWsKCvV8L-Y",
+
+        authDomain:
+            "face-recognition-attenda-328c0.firebaseapp.com",
+
+        projectId:
+            "face-recognition-attenda-328c0",
+
+        storageBucket:
+            "face-recognition-attenda-328c0.firebasestorage.app",
+
+        messagingSenderId:
+            "289877248453",
+
+        appId:
+            "1:289877248453:web:30db49d06316a402e123ac"
+
+    };
+
+
+    /* ===============================
+       INITIALIZE
+    ================================ */
+
+    const app =
+        initializeApp(firebaseConfig);
+
+    const auth =
+        getAuth(app);
+
+    const db =
+        getFirestore(app);
+
+
+    setPersistence(
+        auth,
+        browserSessionPersistence
+    );
+
+
+    /* ===============================
+       AUTH PAGE
+    ================================ */
+
+    const authPage =
+        document.getElementById("authPage");
+
+    const appPage =
+        document.getElementById("app");
+
+
+    const loginForm =
+        document.getElementById("loginForm");
+
+    const registerForm =
+        document.getElementById("registerForm");
+
+
+    document
+        .getElementById("showRegister")
+        .addEventListener("click", () => {
+
+            loginForm.style.display = "none";
+
+            registerForm.style.display = "block";
+
+            document.getElementById(
+                "authTitle"
+            ).innerText = "Create Account";
 
         });
 
 
-        console.log(
-            "Firebase connected successfully!"
-        );
+    document
+        .getElementById("showLogin")
+        .addEventListener("click", () => {
 
+            registerForm.style.display = "none";
 
-        /* ==============================
-           HTML ELEMENTS
-        =============================== */
+            loginForm.style.display = "block";
 
-        const authSection =
             document.getElementById(
-                "authSection"
-            );
+                "authTitle"
+            ).innerText = "Welcome Back";
 
-        const loginForm =
-            document.getElementById(
-                "loginForm"
-            );
+        });
 
-        const registerForm =
-            document.getElementById(
-                "registerForm"
-            );
 
-        const dashboardArea =
-            document.getElementById(
-                "dashboardArea"
-            );
+    /* ===============================
+       LOGIN
+    ================================ */
 
+    document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
 
-        const loginEmail =
-            document.getElementById(
-                "loginEmail"
-            );
+            const email =
+                document.getElementById(
+                    "loginEmail"
+                ).value.trim();
 
-        const loginPassword =
-            document.getElementById(
-                "loginPassword"
-            );
+            const password =
+                document.getElementById(
+                    "loginPassword"
+                ).value;
 
 
-        const registerEmail =
-            document.getElementById(
-                "registerEmail"
-            );
+            const message =
+                document.getElementById(
+                    "loginMessage"
+                );
 
-        const registerPassword =
-            document.getElementById(
-                "registerPassword"
-            );
 
-        const confirmPassword =
-            document.getElementById(
-                "confirmPassword"
-            );
+            if (!email || !password) {
 
+                message.innerText =
+                    "Please enter email and password.";
 
-        const loginBtn =
-            document.getElementById(
-                "loginBtn"
-            );
-
-        const registerBtn =
-            document.getElementById(
-                "registerBtn"
-            );
-
-        const logoutBtn =
-            document.getElementById(
-                "logoutBtn"
-            );
-
-
-        /* ==============================
-           SHOW LOGIN
-        =============================== */
-
-        document
-            .getElementById("showLoginBtn")
-            .addEventListener(
-                "click",
-                () => {
-
-                    registerForm
-                        .classList
-                        .add("hidden");
-
-                    loginForm
-                        .classList
-                        .remove("hidden");
-
-                    document.getElementById(
-                        "registerMessage"
-                    ).innerText = "";
-
-                }
-            );
-
-
-        /* ==============================
-           SHOW REGISTER
-        =============================== */
-
-        document
-            .getElementById("showRegisterBtn")
-            .addEventListener(
-                "click",
-                () => {
-
-                    loginForm
-                        .classList
-                        .add("hidden");
-
-                    registerForm
-                        .classList
-                        .remove("hidden");
-
-                    document.getElementById(
-                        "loginMessage"
-                    ).innerText = "";
-
-                }
-            );
-
-
-        /* ==============================
-           REGISTER
-        =============================== */
-
-        registerBtn.addEventListener(
-            "click",
-            async () => {
-
-                const email =
-                    registerEmail.value.trim();
-
-                const password =
-                    registerPassword.value;
-
-                const confirm =
-                    confirmPassword.value;
-
-
-                const message =
-                    document.getElementById(
-                        "registerMessage"
-                    );
-
-
-                if (!email || !password || !confirm) {
-
-                    message.innerText =
-                        "Please fill all fields.";
-
-                    return;
-                }
-
-
-                if (password !== confirm) {
-
-                    message.innerText =
-                        "Passwords do not match.";
-
-                    return;
-                }
-
-
-                if (password.length < 6) {
-
-                    message.innerText =
-                        "Password must be at least 6 characters.";
-
-                    return;
-                }
-
-
-                try {
-
-                    await createUserWithEmailAndPassword(
-                        auth,
-                        email,
-                        password
-                    );
-
-
-                    message.innerText =
-                        "Registration successful!";
-
-
-                    alert(
-                        "Registration successful! You are now logged in."
-                    );
-
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    message.innerText =
-                        getFirebaseErrorMessage(
-                            error
-                        );
-
-                }
-
-            }
-        );
-
-
-        /* ==============================
-           LOGIN
-        =============================== */
-
-        loginBtn.addEventListener(
-            "click",
-            async () => {
-
-                const email =
-                    loginEmail.value.trim();
-
-                const password =
-                    loginPassword.value;
-
-
-                const message =
-                    document.getElementById(
-                        "loginMessage"
-                    );
-
-
-                if (!email || !password) {
-
-                    message.innerText =
-                        "Please enter email and password.";
-
-                    return;
-                }
-
-
-                try {
-
-                    await signInWithEmailAndPassword(
-                        auth,
-                        email,
-                        password
-                    );
-
-
-                    message.innerText =
-                        "Login successful!";
-
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    message.innerText =
-                        getFirebaseErrorMessage(
-                            error
-                        );
-
-                }
-
-            }
-        );
-
-
-        /* ==============================
-           FIREBASE ERROR MESSAGE
-        =============================== */
-
-        function getFirebaseErrorMessage(error) {
-
-            if (
-                error.code ===
-                "auth/invalid-credential"
-            ) {
-
-                return "Invalid email or password.";
+                return;
 
             }
 
 
-            if (
-                error.code ===
-                "auth/user-not-found"
-            ) {
+            try {
 
-                return "No account found with this email.";
+                await signInWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+                message.innerText =
+                    "Login successful!";
+
+
+            } catch (error) {
+
+                message.innerText =
+                    getErrorMessage(error);
+
+            }
+
+        });
+
+
+    /* ===============================
+       REGISTER
+    ================================ */
+
+    document
+        .getElementById("registerBtn")
+        .addEventListener("click", async () => {
+
+            const email =
+                document.getElementById(
+                    "registerEmail"
+                ).value.trim();
+
+            const password =
+                document.getElementById(
+                    "registerPassword"
+                ).value;
+
+            const confirm =
+                document.getElementById(
+                    "confirmPassword"
+                ).value;
+
+
+            const message =
+                document.getElementById(
+                    "registerMessage"
+                );
+
+
+            if (!email || !password || !confirm) {
+
+                message.innerText =
+                    "Please fill all fields.";
+
+                return;
 
             }
 
 
-            if (
-                error.code ===
-                "auth/email-already-in-use"
-            ) {
+            if (password !== confirm) {
 
-                return "This email is already registered.";
+                message.innerText =
+                    "Passwords do not match.";
 
-            }
-
-
-            if (
-                error.code ===
-                "auth/weak-password"
-            ) {
-
-                return "Password must be at least 6 characters.";
+                return;
 
             }
 
 
-            if (
-                error.code ===
-                "auth/invalid-email"
-            ) {
+            if (password.length < 6) {
 
-                return "Please enter a valid email address.";
+                message.innerText =
+                    "Password must contain at least 6 characters.";
+
+                return;
 
             }
 
 
-            return error.message;
+            try {
+
+                await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+
+                message.innerText =
+                    "Account created successfully!";
+
+
+            } catch (error) {
+
+                message.innerText =
+                    getErrorMessage(error);
+
+            }
+
+        });
+
+
+    /* ===============================
+       FIREBASE ERROR
+    ================================ */
+
+    function getErrorMessage(error) {
+
+        if (
+            error.code ===
+            "auth/email-already-in-use"
+        ) {
+
+            return "Email already registered.";
 
         }
 
+        if (
+            error.code ===
+            "auth/invalid-email"
+        ) {
 
-        /* ==============================
-           AUTH STATE
-        =============================== */
+            return "Invalid email address.";
 
-        onAuthStateChanged(
-            auth,
-            (user) => {
+        }
 
-                if (user) {
+        if (
+            error.code ===
+            "auth/invalid-credential"
+        ) {
 
-                    /* SHOW DASHBOARD */
+            return "Invalid email or password.";
 
-                    authSection
-                        .classList
-                        .add("hidden");
+        }
 
-                    dashboardArea
-                        .classList
-                        .remove("hidden");
+        if (
+            error.code ===
+            "auth/weak-password"
+        ) {
 
+            return "Password must contain at least 6 characters.";
 
-                    document.getElementById(
-                        "loggedUser"
-                    ).innerText =
-                        user.email;
+        }
 
+        return error.message;
 
-                } else {
-
-                    /* SHOW LOGIN PAGE */
-
-                    authSection
-                        .classList
-                        .remove("hidden");
-
-                    dashboardArea
-                        .classList
-                        .add("hidden");
+    }
 
 
-                    document.getElementById(
-                        "loggedUser"
-                    ).innerText = "-";
+    /* ===============================
+       AUTH STATE
+    ================================ */
 
-                }
+    onAuthStateChanged(
+        auth,
+        async (user) => {
+
+            if (user) {
+
+                authPage.style.display =
+                    "none";
+
+                appPage.style.display =
+                    "block";
+
+
+                document.getElementById(
+                    "topUser"
+                ).innerText =
+                    user.email;
+
+
+                document.getElementById(
+                    "avatar"
+                ).innerText =
+                    user.email
+                        .charAt(0)
+                        .toUpperCase();
+
+
+                document.getElementById(
+                    "profileEmail"
+                ).value =
+                    user.email;
+
+
+                document.getElementById(
+                    "profileUid"
+                ).value =
+                    user.uid;
+
+
+                await loadDashboard();
+
+            } else {
+
+                authPage.style.display =
+                    "flex";
+
+                appPage.style.display =
+                    "none";
+
+            }
+
+        }
+    );
+
+
+    /* ===============================
+       NAVIGATION
+    ================================ */
+
+    const navItems =
+        document.querySelectorAll(
+            ".nav-item"
+        );
+
+
+    navItems.forEach(item => {
+
+        item.addEventListener(
+            "click",
+            () => {
+
+                const page =
+                    item.dataset.page;
+
+                openPage(page);
 
             }
         );
 
+    });
 
-        /* ==============================
-           SAVE STUDENT
-        =============================== */
 
-        document
-            .getElementById("saveStudentBtn")
-            .addEventListener(
-                "click",
-                async () => {
+    window.openPage =
+        function(pageName) {
 
-                    const name =
-                        document.getElementById(
-                            "studentName"
-                        ).value.trim();
+            document
+                .querySelectorAll(".page")
+                .forEach(page => {
 
-
-                    const id =
-                        document.getElementById(
-                            "studentId"
-                        ).value.trim();
-
-
-                    const message =
-                        document.getElementById(
-                            "studentMessage"
-                        );
-
-
-                    if (!name || !id) {
-
-                        message.innerText =
-                            "Please enter student name and ID.";
-
-                        return;
-                    }
-
-
-                    try {
-
-                        await addDoc(
-                            collection(
-                                db,
-                                "students"
-                            ),
-                            {
-
-                                name: name,
-
-                                studentId: id,
-
-                                email:
-                                    auth.currentUser.email,
-
-                                userId:
-                                    auth.currentUser.uid,
-
-                                createdAt:
-                                    serverTimestamp()
-
-                            }
-                        );
-
-
-                        message.innerText =
-                            "Student saved to Firebase!";
-
-
-                        document.getElementById(
-                            "displayStudentName"
-                        ).innerText = name;
-
-
-                        document.getElementById(
-                            "displayStudentId"
-                        ).innerText = id;
-
-
-                    } catch (error) {
-
-                        console.error(error);
-
-                        message.innerText =
-                            "Error saving student.";
-
-                    }
-
-                }
-            );
-
-
-        /* ==============================
-           CAMERA
-        =============================== */
-
-        const camera =
-            document.getElementById(
-                "camera"
-            );
-
-
-        let stream = null;
-
-
-        document
-            .getElementById("startCameraBtn")
-            .addEventListener(
-                "click",
-                async () => {
-
-                    try {
-
-                        stream =
-                            await navigator
-                                .mediaDevices
-                                .getUserMedia({
-
-                                    video: true
-
-                                });
-
-
-                        camera.srcObject =
-                            stream;
-
-
-                        document.getElementById(
-                            "faceMessage"
-                        ).innerText =
-                            "Camera started successfully.";
-
-                    } catch (error) {
-
-                        console.error(error);
-
-                        document.getElementById(
-                            "faceMessage"
-                        ).innerText =
-                            "Camera permission denied or camera unavailable.";
-
-                    }
-
-                }
-            );
-
-
-        /* ==============================
-           CAPTURE FACE
-        =============================== */
-
-        document
-            .getElementById("captureBtn")
-            .addEventListener(
-                "click",
-                () => {
-
-                    if (
-                        !camera.videoWidth ||
-                        !camera.videoHeight
-                    ) {
-
-                        document.getElementById(
-                            "faceMessage"
-                        ).innerText =
-                            "Please start the camera first.";
-
-                        return;
-                    }
-
-
-                    const canvas =
-                        document.getElementById(
-                            "canvas"
-                        );
-
-
-                    canvas.width =
-                        camera.videoWidth;
-
-
-                    canvas.height =
-                        camera.videoHeight;
-
-
-                    const context =
-                        canvas.getContext("2d");
-
-
-                    context.drawImage(
-                        camera,
-                        0,
-                        0,
-                        canvas.width,
-                        canvas.height
+                    page.classList.remove(
+                        "active"
                     );
 
-
-                    document.getElementById(
-                        "faceMessage"
-                    ).innerText =
-                        "Face captured successfully.";
-
-                }
-            );
+                });
 
 
-        /* ==============================
-           MARK ATTENDANCE
-        =============================== */
-
-        document
-            .getElementById("attendanceBtn")
-            .addEventListener(
-                "click",
-                async () => {
-
-                    const name =
-                        document.getElementById(
-                            "studentName"
-                        ).value.trim();
+            const selected =
+                document.getElementById(
+                    pageName
+                );
 
 
-                    const studentId =
-                        document.getElementById(
-                            "studentId"
-                        ).value.trim();
+            if (selected) {
+
+                selected.classList.add(
+                    "active"
+                );
+
+            }
 
 
-                    const message =
-                        document.getElementById(
-                            "attendanceMessage"
-                        );
+            navItems.forEach(item => {
+
+                item.classList.remove(
+                    "active"
+                );
 
 
-                    if (!name || !studentId) {
+                if (
+                    item.dataset.page ===
+                    pageName
+                ) {
 
-                        message.innerText =
-                            "Enter student details first.";
-
-                        return;
-                    }
-
-
-                    try {
-
-                        const now =
-                            new Date();
-
-
-                        await addDoc(
-                            collection(
-                                db,
-                                "attendance"
-                            ),
-                            {
-
-                                name: name,
-
-                                studentId:
-                                    studentId,
-
-                                date:
-                                    now.toLocaleDateString(),
-
-                                time:
-                                    now.toLocaleTimeString(),
-
-                                status:
-                                    "Present",
-
-                                userId:
-                                    auth.currentUser.uid,
-
-                                email:
-                                    auth.currentUser.email,
-
-                                createdAt:
-                                    serverTimestamp()
-
-                            }
-                        );
-
-
-                        message.innerText =
-                            "Attendance marked successfully!";
-
-
-                    } catch (error) {
-
-                        console.error(error);
-
-                        message.innerText =
-                            "Error marking attendance.";
-
-                    }
+                    item.classList.add(
+                        "active"
+                    );
 
                 }
-            );
+
+            });
 
 
-        /* ==============================
-           LOAD ATTENDANCE
-        =============================== */
+            const titles = {
 
-        document
-            .getElementById("loadAttendanceBtn")
-            .addEventListener(
-                "click",
-                async () => {
+                dashboard:
+                    "Dashboard",
 
-                    const table =
-                        document.getElementById(
-                            "attendanceTable"
-                        );
+                students:
+                    "Student Management",
 
+                face:
+                    "Face Registration",
 
-                    table.innerHTML = "";
+                attendance:
+                    "Attendance Management",
 
+                reports:
+                    "Attendance Reports",
 
-                    try {
+                profile:
+                    "My Profile",
 
-                        const q =
-                            query(
-                                collection(
-                                    db,
-                                    "attendance"
-                                ),
-                                orderBy(
-                                    "createdAt",
-                                    "desc"
-                                )
-                            );
+                settings:
+                    "Settings"
+
+            };
 
 
-                        const snapshot =
-                            await getDocs(q);
+            document.getElementById(
+                "pageTitle"
+            ).innerText =
+                titles[pageName] ||
+                "Dashboard";
 
 
-                        if (snapshot.empty) {
+            if (pageName === "students") {
 
-                            table.innerHTML = `
-                                <tr>
-                                    <td colspan="5">
-                                        No attendance records found.
-                                    </td>
-                                </tr>
-                            `;
+                loadStudents();
 
-                            return;
-                        }
+            }
 
 
-                        snapshot.forEach(
-                            (doc) => {
+            if (pageName === "attendance") {
 
-                                const data =
-                                    doc.data();
+                loadAttendance();
 
-
-                                const row =
-                                    document
-                                        .createElement(
-                                            "tr"
-                                        );
+            }
 
 
-                                row.innerHTML = `
+            if (pageName === "reports") {
 
-                                    <td>
-                                        ${data.name || ""}
-                                    </td>
+                loadReports();
 
-                                    <td>
-                                        ${data.studentId || ""}
-                                    </td>
+            }
 
-                                    <td>
-                                        ${data.date || ""}
-                                    </td>
-
-                                    <td>
-                                        ${data.time || ""}
-                                    </td>
-
-                                    <td>
-                                        ${data.status || ""}
-                                    </td>
-
-                                `;
+        };
 
 
-                                table.appendChild(
-                                    row
-                                );
+    /* ===============================
+       SAVE STUDENT
+    ================================ */
 
-                            }
-                        );
-
-
-                    } catch (error) {
-
-                        console.error(error);
-
-                        table.innerHTML = `
-                            <tr>
-                                <td colspan="5">
-                                    Unable to load attendance.
-                                </td>
-                            </tr>
-                        `;
-
-                    }
-
-                }
-            );
-
-
-        /* ==============================
-           LOGOUT
-        =============================== */
-
-        logoutBtn.addEventListener(
+    document
+        .getElementById("saveStudentBtn")
+        .addEventListener(
             "click",
             async () => {
 
+                const name =
+                    document.getElementById(
+                        "studentName"
+                    ).value.trim();
+
+                const id =
+                    document.getElementById(
+                        "studentId"
+                    ).value.trim();
+
+                const course =
+                    document.getElementById(
+                        "studentCourse"
+                    ).value.trim();
+
+                const semester =
+                    document.getElementById(
+                        "studentSemester"
+                    ).value;
+
+
+                const message =
+                    document.getElementById(
+                        "studentMessage"
+                    );
+
+
+                if (!name || !id) {
+
+                    message.innerText =
+                        "Student name and ID are required.";
+
+                    return;
+
+                }
+
+
                 try {
 
-                    /* Stop camera */
+                    await addDoc(
+                        collection(
+                            db,
+                            "students"
+                        ),
+                        {
 
-                    if (stream) {
+                            name: name,
 
-                        stream
-                            .getTracks()
-                            .forEach(
-                                track => track.stop()
-                            );
+                            studentId: id,
 
-                        stream = null;
+                            course: course,
 
-                        camera.srcObject =
-                            null;
-                    }
+                            semester: semester,
+
+                            email:
+                                auth.currentUser.email,
+
+                            userId:
+                                auth.currentUser.uid,
+
+                            faceRegistered:
+                                false,
+
+                            createdAt:
+                                serverTimestamp()
+
+                        }
+                    );
 
 
-                    await signOut(auth);
+                    message.innerText =
+                        "Student added successfully!";
 
-
-                    /* Clear form fields */
-
-                    loginEmail.value = "";
-                    loginPassword.value = "";
-
-                    registerEmail.value = "";
-                    registerPassword.value = "";
-                    confirmPassword.value = "";
 
                     document.getElementById(
                         "studentName"
@@ -1418,32 +2412,710 @@
                         "studentId"
                     ).value = "";
 
+                    document.getElementById(
+                        "studentCourse"
+                    ).value = "";
 
                     document.getElementById(
-                        "studentMessage"
-                    ).innerText = "";
+                        "studentSemester"
+                    ).value = "";
 
-                    document.getElementById(
-                        "faceMessage"
-                    ).innerText = "";
 
-                    document.getElementById(
-                        "attendanceMessage"
-                    ).innerText = "";
+                    loadStudents();
+
+                    loadDashboard();
 
 
                 } catch (error) {
 
                     console.error(error);
 
+                    message.innerText =
+                        "Unable to save student.";
+
                 }
 
             }
         );
 
-    </script>
+
+    /* ===============================
+       LOAD STUDENTS
+    ================================ */
+
+    window.loadStudents =
+        async function() {
+
+            const table =
+                document.getElementById(
+                    "studentTable"
+                );
+
+
+            table.innerHTML = "";
+
+
+            try {
+
+                const snapshot =
+                    await getDocs(
+                        collection(
+                            db,
+                            "students"
+                        )
+                    );
+
+
+                document.getElementById(
+                    "totalStudents"
+                ).innerText =
+                    snapshot.size;
+
+
+                if (snapshot.empty) {
+
+                    table.innerHTML = `
+                        <tr>
+                            <td colspan="5">
+                                No students found.
+                            </td>
+                        </tr>
+                    `;
+
+                    return;
+
+                }
+
+
+                snapshot.forEach(doc => {
+
+                    const data =
+                        doc.data();
+
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    row.innerHTML = `
+
+                        <td>
+                            ${data.name || "-"}
+                        </td>
+
+                        <td>
+                            ${data.studentId || "-"}
+                        </td>
+
+                        <td>
+                            ${data.course || "-"}
+                        </td>
+
+                        <td>
+                            ${data.semester || "-"}
+                        </td>
+
+                        <td>
+                            ${data.email || "-"}
+                        </td>
+
+                    `;
+
+
+                    table.appendChild(row);
+
+                });
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                table.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            Error loading students.
+                        </td>
+                    </tr>
+                `;
+
+            }
+
+        };
+
+
+    /* ===============================
+       CAMERA
+    ================================ */
+
+    let stream = null;
+
+
+    const camera =
+        document.getElementById(
+            "camera"
+        );
+
+
+    document
+        .getElementById(
+            "startCameraBtn"
+        )
+        .addEventListener(
+            "click",
+            async () => {
+
+                try {
+
+                    stream =
+                        await navigator
+                            .mediaDevices
+                            .getUserMedia({
+
+                                video: true
+
+                            });
+
+
+                    camera.srcObject =
+                        stream;
+
+
+                    document.getElementById(
+                        "faceMessage"
+                    ).innerText =
+                        "Camera started successfully.";
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    document.getElementById(
+                        "faceMessage"
+                    ).innerText =
+                        "Camera permission denied.";
+
+                }
+
+            }
+        );
+
+
+    /* ===============================
+       CAPTURE FACE
+    ================================ */
+
+    document
+        .getElementById("captureBtn")
+        .addEventListener(
+            "click",
+            () => {
+
+                const canvas =
+                    document.getElementById(
+                        "canvas"
+                    );
+
+
+                if (
+                    !camera.videoWidth
+                ) {
+
+                    document.getElementById(
+                        "faceMessage"
+                    ).innerText =
+                        "Start the camera first.";
+
+                    return;
+
+                }
+
+
+                canvas.width =
+                    camera.videoWidth;
+
+                canvas.height =
+                    camera.videoHeight;
+
+
+                const context =
+                    canvas.getContext(
+                        "2d"
+                    );
+
+
+                context.drawImage(
+                    camera,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+
+                document.getElementById(
+                    "faceMessage"
+                ).innerText =
+                    "Face image captured successfully.";
+
+            }
+        );
+
+
+    /* ===============================
+       STOP CAMERA
+    ================================ */
+
+    document
+        .getElementById(
+            "stopCameraBtn"
+        )
+        .addEventListener(
+            "click",
+            () => {
+
+                if (stream) {
+
+                    stream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                track.stop()
+                        );
+
+
+                    stream = null;
+
+                    camera.srcObject =
+                        null;
+
+                }
+
+
+                document.getElementById(
+                    "faceMessage"
+                ).innerText =
+                    "Camera stopped.";
+
+            }
+        );
+
+
+    /* ===============================
+       MARK ATTENDANCE
+    ================================ */
+
+    document
+        .getElementById("attendanceBtn")
+        .addEventListener(
+            "click",
+            async () => {
+
+                const name =
+                    document.getElementById(
+                        "attendanceName"
+                    ).value.trim();
+
+
+                const id =
+                    document.getElementById(
+                        "attendanceId"
+                    ).value.trim();
+
+
+                const message =
+                    document.getElementById(
+                        "attendanceMessage"
+                    );
+
+
+                if (!name || !id) {
+
+                    message.innerText =
+                        "Enter student name and ID.";
+
+                    return;
+
+                }
+
+
+                try {
+
+                    const now =
+                        new Date();
+
+
+                    await addDoc(
+                        collection(
+                            db,
+                            "attendance"
+                        ),
+                        {
+
+                            name: name,
+
+                            studentId: id,
+
+                            date:
+                                now.toLocaleDateString(),
+
+                            time:
+                                now.toLocaleTimeString(),
+
+                            status:
+                                "Present",
+
+                            userId:
+                                auth.currentUser.uid,
+
+                            email:
+                                auth.currentUser.email,
+
+                            createdAt:
+                                serverTimestamp()
+
+                        }
+                    );
+
+
+                    message.innerText =
+                        "Attendance marked successfully!";
+
+
+                    document.getElementById(
+                        "attendanceName"
+                    ).value = "";
+
+                    document.getElementById(
+                        "attendanceId"
+                    ).value = "";
+
+
+                    loadAttendance();
+
+                    loadDashboard();
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    message.innerText =
+                        "Error marking attendance.";
+
+                }
+
+            }
+        );
+
+
+    /* ===============================
+       LOAD ATTENDANCE
+    ================================ */
+
+    window.loadAttendance =
+        async function() {
+
+            const table =
+                document.getElementById(
+                    "attendanceTable"
+                );
+
+
+            const recent =
+                document.getElementById(
+                    "recentAttendance"
+                );
+
+
+            if (table) {
+
+                table.innerHTML = "";
+
+            }
+
+
+            if (recent) {
+
+                recent.innerHTML = "";
+
+            }
+
+
+            try {
+
+                const q =
+                    query(
+                        collection(
+                            db,
+                            "attendance"
+                        ),
+                        orderBy(
+                            "createdAt",
+                            "desc"
+                        )
+                    );
+
+
+                const snapshot =
+                    await getDocs(q);
+
+
+                if (snapshot.empty) {
+
+                    const emptyRow = `
+                        <tr>
+                            <td colspan="5">
+                                No attendance records found.
+                            </td>
+                        </tr>
+                    `;
+
+
+                    if (table) {
+
+                        table.innerHTML =
+                            emptyRow;
+
+                    }
+
+
+                    if (recent) {
+
+                        recent.innerHTML =
+                            emptyRow;
+
+                    }
+
+                    return;
+
+                }
+
+
+                let count = 0;
+
+
+                snapshot.forEach(doc => {
+
+                    const data =
+                        doc.data();
+
+
+                    const row = `
+
+                        <tr>
+
+                            <td>
+                                ${data.name || "-"}
+                            </td>
+
+                            <td>
+                                ${data.studentId || "-"}
+                            </td>
+
+                            <td>
+                                ${data.date || "-"}
+                            </td>
+
+                            <td>
+                                ${data.time || "-"}
+                            </td>
+
+                            <td>
+                                <span class="badge present">
+                                    ${data.status || "Present"}
+                                </span>
+                            </td>
+
+                        </tr>
+
+                    `;
+
+
+                    if (table) {
+
+                        table.innerHTML += row;
+
+                    }
+
+
+                    if (
+                        recent &&
+                        count < 5
+                    ) {
+
+                        recent.innerHTML += row;
+
+                    }
+
+
+                    count++;
+
+                });
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                if (table) {
+
+                    table.innerHTML = `
+                        <tr>
+                            <td colspan="5">
+                                Unable to load attendance.
+                            </td>
+                        </tr>
+                    `;
+
+                }
+
+            }
+
+        };
+
+
+    /* ===============================
+       DASHBOARD
+    ================================ */
+
+    async function loadDashboard() {
+
+        await loadStudents();
+
+        await loadAttendance();
+
+        await loadReports();
+
+    }
+
+
+    /* ===============================
+       REPORTS
+    ================================ */
+
+    window.loadReports =
+        async function() {
+
+            try {
+
+                const students =
+                    await getDocs(
+                        collection(
+                            db,
+                            "students"
+                        )
+                    );
+
+
+                const attendance =
+                    await getDocs(
+                        collection(
+                            db,
+                            "attendance"
+                        )
+                    );
+
+
+                const totalStudents =
+                    students.size;
+
+
+                const totalAttendance =
+                    attendance.size;
+
+
+                const rate =
+                    totalStudents > 0
+                        ? Math.min(
+                            100,
+                            Math.round(
+                                (
+                                    totalAttendance /
+                                    totalStudents
+                                ) * 100
+                            )
+                        )
+                        : 0;
+
+
+                document.getElementById(
+                    "reportStudents"
+                ).innerText =
+                    totalStudents;
+
+
+                document.getElementById(
+                    "reportPresent"
+                ).innerText =
+                    totalAttendance;
+
+
+                document.getElementById(
+                    "reportRate"
+                ).innerText =
+                    rate + "%";
+
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+        };
+
+
+    /* ===============================
+       SAVE SETTINGS
+    ================================ */
+
+    window.saveSettings =
+        function() {
+
+            document.getElementById(
+                "settingsMessage"
+            ).innerText =
+                "Settings saved successfully.";
+
+        };
+
+
+    /* ===============================
+       LOGOUT
+    ================================ */
+
+    document
+        .getElementById("logoutBtn")
+        .addEventListener(
+            "click",
+            async () => {
+
+                if (stream) {
+
+                    stream
+                        .getTracks()
+                        .forEach(
+                            track =>
+                                track.stop()
+                        );
+
+                    stream = null;
+
+                }
+
+
+                await signOut(auth);
+
+            }
+        );
+
+</script>
+
 
 </body>
 
 </html>
-
+```
