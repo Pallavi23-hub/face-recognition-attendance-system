@@ -1,602 +1,2416 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta charset="UTF-8">
+<title>SmartFace Attendance System</title>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    updateProfile
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    <title>Smart Face Attendance System</title>
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    where,
+    orderBy,
+    limit,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <style>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
+/* =========================================================
+   FIREBASE CONFIG
+========================================================= */
 
-        body {
-            background: #f5f7fb;
-            color: #1f2937;
-        }
+const firebaseConfig = {
+    apiKey: "AIzaSyC8KMuO0yg9gN4MD3YCV8YNWsKCvV8L-Y",
+    authDomain: "face-recognition-attenda-328c0.firebaseapp.com",
+    projectId: "face-recognition-attenda-328c0",
+    storageBucket: "face-recognition-attenda-328c0.firebasestorage.app",
+    messagingSenderId: "289877248453",
+    appId: "1:289877248453:web:30db49d06316a402e123ac"
+};
 
-        button {
-            cursor: pointer;
-        }
 
-        /* =========================
-           LOGIN
-        ========================= */
+/* =========================================================
+   INITIALIZE FIREBASE
+========================================================= */
 
-        #authPage {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(
-                135deg,
-                #1e3a8a,
-                #2563eb,
-                #38bdf8
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+
+/* =========================================================
+   GLOBAL VARIABLES
+========================================================= */
+
+let currentUser = null;
+let cameraStream = null;
+let recognitionRunning = false;
+let faceMatcher = null;
+let studentsCache = [];
+
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const authPage = document.getElementById("authPage");
+const appPage = document.getElementById("app");
+
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+
+const loginEmail = document.getElementById("loginEmail");
+const loginPassword = document.getElementById("loginPassword");
+
+const registerName = document.getElementById("registerName");
+const registerEmail = document.getElementById("registerEmail");
+const registerPassword = document.getElementById("registerPassword");
+
+const authMessage = document.getElementById("authMessage");
+
+const faceVideo = document.getElementById("faceVideo");
+const faceCanvas = document.getElementById("faceCanvas");
+
+const faceStudentSelect = document.getElementById("faceStudentSelect");
+const faceStatus = document.getElementById("faceStatus");
+
+const startFaceCamera = document.getElementById("startFaceCamera");
+const stopFaceCamera = document.getElementById("stopFaceCamera");
+const registerFaceButton = document.getElementById("registerFace");
+
+const recognitionVideo = document.getElementById("recognitionVideo");
+const recognitionCanvas = document.getElementById("recognitionCanvas");
+
+const startRecognition = document.getElementById("startRecognition");
+const stopRecognition = document.getElementById("stopRecognition");
+
+const recognitionStatus = document.getElementById("recognitionStatus");
+
+
+/* =========================================================
+   AUTH - LOGIN
+========================================================= */
+
+loginForm.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+
+    authMessage.innerText = "Logging in...";
+
+    try {
+
+        await signInWithEmailAndPassword(
+            auth,
+            email,
+            password
+        );
+
+        authMessage.innerText = "";
+
+    } catch (error) {
+
+        authMessage.innerText = error.message;
+
+    }
+
+});
+
+
+/* =========================================================
+   AUTH - REGISTER
+========================================================= */
+
+registerForm.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    const name = registerName.value.trim();
+    const email = registerEmail.value.trim();
+    const password = registerPassword.value;
+
+    authMessage.innerText = "Creating account...";
+
+    try {
+
+        const userCredential =
+            await createUserWithEmailAndPassword(
+                auth,
+                email,
+                password
             );
+
+        await updateProfile(
+            userCredential.user,
+            {
+                displayName: name
+            }
+        );
+
+        await setDoc(
+            doc(db, "users", userCredential.user.uid),
+            {
+                name: name,
+                email: email,
+                role: "admin",
+                createdAt: serverTimestamp()
+            }
+        );
+
+        authMessage.innerText = "";
+
+    } catch (error) {
+
+        authMessage.innerText = error.message;
+
+    }
+
+});
+
+
+/* =========================================================
+   AUTH STATE
+========================================================= */
+
+onAuthStateChanged(auth, async (user) => {
+
+    if (user) {
+
+        currentUser = user;
+
+        authPage.style.display = "none";
+        appPage.style.display = "flex";
+
+        document.getElementById("profileName").innerText =
+            user.displayName || "Administrator";
+
+        document.getElementById("profileEmail").innerText =
+            user.email || "";
+
+        document.getElementById("sidebarName").innerText =
+            user.displayName || "Administrator";
+
+        document.getElementById("sidebarEmail").innerText =
+            user.email || "";
+
+        await loadDashboard();
+
+        await loadStudents();
+
+        await loadAttendance();
+
+        await loadReport();
+
+    } else {
+
+        currentUser = null;
+
+        authPage.style.display = "flex";
+        appPage.style.display = "none";
+
+        stopCamera();
+        stopRecognitionCamera();
+
+    }
+
+});
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+document.getElementById("logoutBtn").addEventListener(
+    "click",
+    async () => {
+
+        await signOut(auth);
+
+    }
+);
+
+
+/* =========================================================
+   AUTH TAB SWITCH
+========================================================= */
+
+document.getElementById("showRegister").addEventListener(
+    "click",
+    () => {
+
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("registerBox").style.display = "block";
+
+    }
+);
+
+document.getElementById("showLogin").addEventListener(
+    "click",
+    () => {
+
+        document.getElementById("registerBox").style.display = "none";
+        document.getElementById("loginBox").style.display = "block";
+
+    }
+);
+
+
+/* =========================================================
+   SIDEBAR NAVIGATION
+========================================================= */
+
+document.querySelectorAll(".nav-item").forEach(item => {
+
+    item.addEventListener("click", async () => {
+
+        const pageName = item.dataset.page;
+
+        document.querySelectorAll(".nav-item")
+            .forEach(nav => nav.classList.remove("active"));
+
+        item.classList.add("active");
+
+        document.querySelectorAll(".page")
+            .forEach(page => page.classList.remove("active"));
+
+        const selectedPage =
+            document.getElementById(pageName);
+
+        if (selectedPage) {
+            selectedPage.classList.add("active");
         }
 
-        .login-card {
-            width: 420px;
-            max-width: 92%;
-            background: white;
-            padding: 35px;
-            border-radius: 18px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        if (pageName === "students") {
+            await loadStudents();
         }
 
-        .logo {
-            width: 65px;
-            height: 65px;
-            background: #2563eb;
-            color: white;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            margin: 0 auto 15px;
+        if (pageName === "attendance") {
+            await loadAttendance();
         }
 
-        .login-card h1 {
-            text-align: center;
-            font-size: 25px;
+        if (pageName === "reports") {
+            await loadReport();
         }
 
-        .login-card .subtitle {
-            text-align: center;
-            color: #6b7280;
-            margin: 10px 0 25px;
+        if (pageName === "face") {
+            await loadStudentSelect();
         }
 
-        .input-group {
-            margin-bottom: 16px;
+    });
+
+});
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+async function loadDashboard() {
+
+    try {
+
+        const studentQuery = query(
+            collection(db, "students"),
+            where("userId", "==", currentUser.uid)
+        );
+
+        const studentSnapshot =
+            await getDocs(studentQuery);
+
+        document.getElementById("totalStudents").innerText =
+            studentSnapshot.size;
+
+
+        const attendanceQuery = query(
+            collection(db, "attendance"),
+            where("userId", "==", currentUser.uid)
+        );
+
+        const attendanceSnapshot =
+            await getDocs(attendanceQuery);
+
+        document.getElementById("totalAttendance").innerText =
+            attendanceSnapshot.size;
+
+
+        let todayCount = 0;
+
+        const today = new Date();
+
+        const todayString =
+            `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+
+        attendanceSnapshot.forEach(docSnap => {
+
+            const data = docSnap.data();
+
+            if (data.date === todayString) {
+                todayCount++;
+            }
+
+        });
+
+        document.getElementById("todayAttendance").innerText =
+            todayCount;
+
+
+        let faceCount = 0;
+
+        studentSnapshot.forEach(docSnap => {
+
+            if (docSnap.data().faceRegistered === true) {
+                faceCount++;
+            }
+
+        });
+
+        document.getElementById("faceRegistered").innerText =
+            faceCount;
+
+
+        loadRecentAttendance(attendanceSnapshot);
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================================================
+   STUDENT MANAGEMENT
+========================================================= */
+
+const studentForm =
+    document.getElementById("studentForm");
+
+studentForm.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    if (!currentUser) return;
+
+    const name =
+        document.getElementById("studentName").value.trim();
+
+    const studentId =
+        document.getElementById("studentId").value.trim();
+
+    const course =
+        document.getElementById("studentCourse").value.trim();
+
+    const semester =
+        document.getElementById("studentSemester").value.trim();
+
+    const email =
+        document.getElementById("studentEmail").value.trim();
+
+
+    if (!name || !studentId) {
+
+        alert("Please enter student name and ID.");
+        return;
+
+    }
+
+
+    try {
+
+        await addDoc(
+            collection(db, "students"),
+            {
+
+                name: name,
+
+                studentId: studentId,
+
+                course: course,
+
+                semester: semester,
+
+                email: email,
+
+                userId: currentUser.uid,
+
+                faceRegistered: false,
+
+                createdAt: serverTimestamp()
+
+            }
+        );
+
+
+        alert("Student added successfully!");
+
+        studentForm.reset();
+
+        await loadStudents();
+
+        await loadStudentSelect();
+
+        await loadDashboard();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Error adding student: " + error.message);
+
+    }
+
+});
+
+
+/* =========================================================
+   LOAD STUDENTS
+========================================================= */
+
+async function loadStudents() {
+
+    if (!currentUser) return;
+
+    try {
+
+        const q = query(
+            collection(db, "students"),
+            where("userId", "==", currentUser.uid)
+        );
+
+        const snapshot = await getDocs(q);
+
+        studentsCache = [];
+
+        const tbody =
+            document.getElementById("studentTableBody");
+
+        tbody.innerHTML = "";
+
+        snapshot.forEach(docSnap => {
+
+            const student =
+                docSnap.data();
+
+            studentsCache.push({
+                id: docSnap.id,
+                ...student
+            });
+
+
+            const row =
+                document.createElement("tr");
+
+            row.innerHTML = `
+
+                <td>
+                    <strong>${escapeHTML(student.studentId || "")}</strong>
+                </td>
+
+                <td>
+                    ${escapeHTML(student.name || "")}
+                </td>
+
+                <td>
+                    ${escapeHTML(student.course || "-")}
+                </td>
+
+                <td>
+                    ${escapeHTML(student.semester || "-")}
+                </td>
+
+                <td>
+                    ${escapeHTML(student.email || "-")}
+                </td>
+
+                <td>
+                    ${
+                        student.faceRegistered
+                        ?
+                        '<span class="badge success">Registered</span>'
+                        :
+                        '<span class="badge warning">Not Registered</span>'
+                    }
+                </td>
+
+            `;
+
+            tbody.appendChild(row);
+
+        });
+
+        document.getElementById("studentCount").innerText =
+            snapshot.size;
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================================================
+   STUDENT SELECT FOR FACE REGISTRATION
+========================================================= */
+
+async function loadStudentSelect() {
+
+    if (!currentUser || !faceStudentSelect) return;
+
+    try {
+
+        const q = query(
+            collection(db, "students"),
+            where("userId", "==", currentUser.uid)
+        );
+
+        const snapshot = await getDocs(q);
+
+        faceStudentSelect.innerHTML =
+            '<option value="">Select a student</option>';
+
+        snapshot.forEach(docSnap => {
+
+            const student =
+                docSnap.data();
+
+            if (!student.faceRegistered) {
+
+                const option =
+                    document.createElement("option");
+
+                option.value = docSnap.id;
+
+                option.textContent =
+                    `${student.studentId} - ${student.name}`;
+
+                faceStudentSelect.appendChild(option);
+
+            }
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD FACE API MODELS
+========================================================= */
+
+async function loadFaceModels() {
+
+    if (typeof faceapi === "undefined") {
+
+        faceStatus.innerText =
+            "Face API library not loaded.";
+
+        return false;
+
+    }
+
+    try {
+
+        faceStatus.innerText =
+            "Loading face recognition models...";
+
+        await faceapi.nets.tinyFaceDetector.loadFromUri(
+            "./models"
+        );
+
+        await faceapi.nets.faceLandmark68Net.loadFromUri(
+            "./models"
+        );
+
+        await faceapi.nets.faceRecognitionNet.loadFromUri(
+            "./models"
+        );
+
+        faceStatus.innerText =
+            "Face recognition models loaded.";
+
+        return true;
+
+    } catch (error) {
+
+        console.error(error);
+
+        faceStatus.innerText =
+            "Unable to load face models. Check the models folder.";
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   START FACE REGISTRATION CAMERA
+========================================================= */
+
+startFaceCamera.addEventListener(
+    "click",
+    async () => {
+
+        if (!faceStudentSelect.value) {
+
+            alert("Please select a student first.");
+            return;
+
         }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 7px;
-            font-weight: bold;
-            font-size: 14px;
+
+        const modelsLoaded =
+            await loadFaceModels();
+
+        if (!modelsLoaded) return;
+
+
+        try {
+
+            cameraStream =
+                await navigator.mediaDevices.getUserMedia({
+
+                    video: {
+                        width: 640,
+                        height: 480,
+                        facingMode: "user"
+                    },
+
+                    audio: false
+
+                });
+
+
+            faceVideo.srcObject =
+                cameraStream;
+
+            registerFaceButton.disabled =
+                false;
+
+            faceStatus.innerText =
+                "Camera started. Look directly at the camera.";
+
+        } catch (error) {
+
+            console.error(error);
+
+            faceStatus.innerText =
+                "Camera permission denied or camera unavailable.";
+
         }
 
-        .input-group input,
-        .input-group select {
-            width: 100%;
-            padding: 13px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            outline: none;
+    }
+);
+
+
+/* =========================================================
+   STOP REGISTRATION CAMERA
+========================================================= */
+
+stopFaceCamera.addEventListener(
+    "click",
+    () => {
+
+        stopCamera();
+
+    }
+);
+
+
+function stopCamera() {
+
+    if (cameraStream) {
+
+        cameraStream.getTracks().forEach(track => {
+            track.stop();
+        });
+
+        cameraStream = null;
+
+    }
+
+    if (faceVideo) {
+        faceVideo.srcObject = null;
+    }
+
+    registerFaceButton.disabled = true;
+
+}
+
+
+/* =========================================================
+   REGISTER FACE
+========================================================= */
+
+registerFaceButton.addEventListener(
+    "click",
+    async () => {
+
+        const selectedStudentId =
+            faceStudentSelect.value;
+
+        if (!selectedStudentId) {
+
+            alert("Select a student.");
+            return;
+
         }
 
-        .input-group input:focus,
-        .input-group select:focus {
-            border-color: #2563eb;
+        if (!cameraStream) {
+
+            alert("Start the camera first.");
+            return;
+
         }
 
-        .primary-btn {
-            width: 100%;
-            border: none;
-            padding: 13px;
-            border-radius: 8px;
-            background: #2563eb;
-            color: white;
-            font-size: 15px;
-            font-weight: bold;
-        }
 
-        .primary-btn:hover {
-            background: #1d4ed8;
-        }
+        faceStatus.innerText =
+            "Detecting face... Please stay still.";
 
-        .switch-auth {
-            text-align: center;
-            margin-top: 18px;
-            color: #6b7280;
-        }
 
-        .link-btn {
-            border: none;
-            background: none;
-            color: #2563eb;
-            font-weight: bold;
-        }
+        try {
 
-        .message {
-            margin-top: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
+            const detection =
+                await faceapi
+                    .detectSingleFace(
+                        faceVideo,
+                        new faceapi.TinyFaceDetectorOptions()
+                    )
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
 
-        /* =========================
-           APP
-        ========================= */
 
-        #app {
-            display: none;
-            min-height: 100vh;
-        }
+            if (!detection) {
 
-        /* =========================
-           SIDEBAR
-        ========================= */
+                faceStatus.innerText =
+                    "No face detected. Look directly at the camera.";
 
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 250px;
-            height: 100vh;
-            background: #111827;
-            color: white;
-            padding: 25px 15px;
-            z-index: 1000;
-        }
+                return;
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 10px 30px;
-        }
+            }
 
-        .brand-icon {
-            width: 42px;
-            height: 42px;
-            background: #2563eb;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
 
-        .brand h2 {
-            font-size: 17px;
-        }
+            const descriptor =
+                Array.from(detection.descriptor);
 
-        .brand small {
-            color: #9ca3af;
-        }
 
-        .nav-title {
-            color: #6b7280;
-            font-size: 11px;
-            margin: 15px 10px 8px;
-            text-transform: uppercase;
-        }
+            await updateDoc(
+                doc(
+                    db,
+                    "students",
+                    selectedStudentId
+                ),
+                {
 
-        .nav-item {
-            width: 100%;
-            border: none;
-            background: transparent;
-            color: #d1d5db;
-            padding: 13px 12px;
-            margin-bottom: 5px;
-            border-radius: 8px;
-            text-align: left;
-            font-size: 14px;
-        }
+                    faceEmbedding: descriptor,
 
-        .nav-item:hover,
-        .nav-item.active {
-            background: #2563eb;
-            color: white;
-        }
+                    faceRegistered: true,
 
-        .logout {
-            position: absolute;
-            bottom: 25px;
-            left: 15px;
-            width: calc(100% - 30px);
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-        }
+                    faceRegisteredAt:
+                        serverTimestamp()
 
-        /* =========================
-           MAIN
-        ========================= */
-
-        .main {
-            margin-left: 250px;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            height: 75px;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 30px;
-        }
-
-        .topbar h2 {
-            font-size: 21px;
-        }
-
-        .user-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            background: #dbeafe;
-            color: #1d4ed8;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        /* =========================
-           CARDS
-        ========================= */
-
-        .welcome {
-            background: linear-gradient(
-                135deg,
-                #1d4ed8,
-                #2563eb
+                }
             );
-            color: white;
-            padding: 28px;
-            border-radius: 15px;
-            margin-bottom: 25px;
+
+
+            faceStatus.innerText =
+                "Face registered successfully!";
+
+
+            alert("Face registered successfully!");
+
+
+            await loadStudentSelect();
+
+            await loadStudents();
+
+            await loadDashboard();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            faceStatus.innerText =
+                "Face registration failed.";
+
+            alert(error.message);
+
         }
 
-        .welcome h1 {
-            margin-bottom: 8px;
+    }
+);
+
+
+/* =========================================================
+   AUTOMATIC FACE ATTENDANCE
+========================================================= */
+
+async function startFaceRecognition() {
+
+    if (!currentUser) return;
+
+
+    const modelsLoaded =
+        await loadFaceModelsForRecognition();
+
+    if (!modelsLoaded) return;
+
+
+    try {
+
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
+
+                video: {
+                    width: 640,
+                    height: 480,
+                    facingMode: "user"
+                },
+
+                audio: false
+
+            });
+
+
+        recognitionVideo.srcObject =
+            stream;
+
+        recognitionRunning = true;
+
+        recognitionStatus.innerText =
+            "Camera started. Looking for a registered face...";
+
+
+        await buildFaceMatcher();
+
+        recognizeFaceLoop();
+
+    } catch (error) {
+
+        console.error(error);
+
+        recognitionStatus.innerText =
+            "Unable to access camera.";
+
+    }
+
+}
+
+
+/* =========================================================
+   LOAD MODELS FOR RECOGNITION
+========================================================= */
+
+async function loadFaceModelsForRecognition() {
+
+    try {
+
+        recognitionStatus.innerText =
+            "Loading face recognition models...";
+
+
+        await faceapi.nets.tinyFaceDetector.loadFromUri(
+            "./models"
+        );
+
+        await faceapi.nets.faceLandmark68Net.loadFromUri(
+            "./models"
+        );
+
+        await faceapi.nets.faceRecognitionNet.loadFromUri(
+            "./models"
+        );
+
+
+        recognitionStatus.innerText =
+            "Models loaded.";
+
+        return true;
+
+    } catch (error) {
+
+        console.error(error);
+
+        recognitionStatus.innerText =
+            "Could not load face models.";
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   BUILD FACE MATCHER
+========================================================= */
+
+async function buildFaceMatcher() {
+
+    const q = query(
+        collection(db, "students"),
+        where("userId", "==", currentUser.uid)
+    );
+
+    const snapshot =
+        await getDocs(q);
+
+
+    const labeledDescriptors = [];
+
+
+    snapshot.forEach(docSnap => {
+
+        const student =
+            docSnap.data();
+
+
+        if (
+            student.faceRegistered &&
+            Array.isArray(student.faceEmbedding)
+        ) {
+
+            const descriptor =
+                new Float32Array(
+                    student.faceEmbedding
+                );
+
+
+            const labeled =
+                new faceapi.LabeledFaceDescriptors(
+                    docSnap.id,
+                    [descriptor]
+                );
+
+
+            labeledDescriptors.push(labeled);
+
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns:
-                repeat(4, 1fr);
-            gap: 18px;
-            margin-bottom: 25px;
-        }
+    });
 
-        .stat-card {
-            background: white;
-            padding: 22px;
-            border-radius: 13px;
-            border: 1px solid #e5e7eb;
-        }
 
-        .stat-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    if (labeledDescriptors.length === 0) {
 
-        .stat-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            background: #dbeafe;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
+        faceMatcher = null;
 
-        .stat-card h3 {
-            font-size: 27px;
-            margin-top: 15px;
-        }
+        recognitionStatus.innerText =
+            "No registered faces found.";
 
-        .stat-card p {
-            color: #6b7280;
-            font-size: 13px;
-        }
+        return;
 
-        /* =========================
-           CONTENT CARDS
-        ========================= */
+    }
 
-        .card {
-            background: white;
-            border-radius: 13px;
-            padding: 25px;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 22px;
-        }
 
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+    faceMatcher =
+        new faceapi.FaceMatcher(
+            labeledDescriptors,
+            0.55
+        );
 
-        .card-header h3 {
-            font-size: 18px;
-        }
+}
 
-        /* =========================
-           FORMS
-        ========================= */
 
-        .form-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(2, 1fr);
-            gap: 18px;
-        }
+/* =========================================================
+   FACE RECOGNITION LOOP
+========================================================= */
 
-        .form-group {
-            margin-bottom: 5px;
-        }
+async function recognizeFaceLoop() {
 
-        .form-group label {
-            display: block;
-            margin-bottom: 7px;
-            font-weight: bold;
-            font-size: 14px;
-        }
+    if (!recognitionRunning) return;
 
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 7px;
-        }
 
-        .btn {
-            border: none;
-            padding: 11px 18px;
-            border-radius: 7px;
-            color: white;
-            font-weight: bold;
-            margin-top: 15px;
-        }
+    if (
+        recognitionVideo.readyState <
+        2
+    ) {
 
-        .btn-primary {
-            background: #2563eb;
-        }
+        requestAnimationFrame(
+            recognizeFaceLoop
+        );
 
-        .btn-success {
-            background: #16a34a;
-        }
+        return;
 
-        .btn-danger {
-            background: #dc2626;
-        }
+    }
 
-        .btn-secondary {
-            background: #6b7280;
-        }
 
-        /* =========================
-           TABLE
-        ========================= */
+    try {
 
-        .table-container {
-            overflow-x: auto;
-        }
+        const detection =
+            await faceapi
+                .detectSingleFace(
+                    recognitionVideo,
+                    new faceapi.TinyFaceDetectorOptions()
+                )
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
 
-        th,
-        td {
-            padding: 13px;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: left;
-            font-size: 14px;
-        }
+        if (detection && faceMatcher) {
 
-        th {
-            background: #f9fafb;
-            color: #374151;
-        }
+            const bestMatch =
+                faceMatcher.findBestMatch(
+                    detection.descriptor
+                );
 
-        .badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
 
-        .present {
-            background: #dcfce7;
-            color: #166534;
-        }
+            if (
+                bestMatch.label !== "unknown"
+            ) {
 
-        .absent {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+                const studentId =
+                    bestMatch.label;
 
-        /* =========================
-           CAMERA
-        ========================= */
 
-        .camera-container {
-            text-align: center;
-        }
+                const student =
+                    studentsCache.find(
+                        s => s.id === studentId
+                    );
 
-        #camera {
-            width: 100%;
-            max-width: 650px;
-            background: black;
-            border-radius: 12px;
-            margin: 15px auto;
-        }
 
-        #canvas {
-            display: none;
-        }
+                if (student) {
 
-        .face-status {
-            padding: 12px;
-            background: #eff6ff;
-            color: #1d4ed8;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
+                    recognitionStatus.innerText =
+                        `Recognized: ${student.name}`;
 
-        /* =========================
-           REPORT BOX
-        ========================= */
 
-        .report-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(3, 1fr);
-            gap: 18px;
-        }
+                    await markAutomaticAttendance(
+                        student
+                    );
 
-        .report-box {
-            background: #f9fafb;
-            padding: 25px;
-            border-radius: 10px;
-            text-align: center;
-        }
+                }
 
-        .report-box h2 {
-            font-size: 30px;
-            margin-bottom: 8px;
-        }
+            } else {
 
-        .report-box p {
-            color: #6b7280;
-        }
+                recognitionStatus.innerText =
+                    "Face detected, but student not recognized.";
 
-        /* =========================
-           MOBILE
-        ========================= */
-
-        @media(max-width: 900px) {
-
-            .stats {
-                grid-template-columns:
-                    repeat(2, 1fr);
             }
 
-            .report-grid {
-                grid-template-columns:
-                    repeat(2, 1fr);
-            }
+        } else {
+
+            recognitionStatus.innerText =
+                "Looking for a registered face...";
 
         }
 
-        @media(max-width: 700px) {
+    } catch (error) {
 
-            .sidebar {
-                width: 70px;
-                padding: 20px 8px;
-            }
+        console.error(error);
 
-            .brand h2,
-            .brand small,
-            .nav-title {
-                display: none;
-            }
+    }
 
-            .brand {
-                justify-content: center;
-            }
 
-            .nav-item {
-                text-align: center;
-                font-size: 0;
-            }
+    setTimeout(
+        recognizeFaceLoop,
+        1200
+    );
 
-            .nav-item::first-letter {
-                font-size: 20px;
-            }
+}
 
-            .logout {
-                font-size: 0;
-            }
 
-            .logout::before {
-                content: "↪";
-                font-size: 20px;
-            }
+/* =========================================================
+   START RECOGNITION BUTTON
+========================================================= */
 
-            .main {
-                margin-left: 70px;
-            }
+if (startRecognition) {
 
-            .content {
-                padding: 15px;
-            }
+    startRecognition.addEventListener(
+        "click",
+        async () => {
 
-            .topbar {
-                padding: 0 15px;
-            }
+            await startFaceRecognition();
 
-            .stats {
-                grid-template-columns: 1fr;
-            }
+        }
+    );
 
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
+}
 
-            .report-grid {
-                grid-template-columns: 1fr;
-            }
+
+/* =========================================================
+   STOP RECOGNITION BUTTON
+========================================================= */
+
+if (stopRecognition) {
+
+    stopRecognition.addEventListener(
+        "click",
+        () => {
+
+            stopRecognitionCamera();
+
+        }
+    );
+
+}
+
+
+function stopRecognitionCamera() {
+
+    recognitionRunning = false;
+
+    if (
+        recognitionVideo &&
+        recognitionVideo.srcObject
+    ) {
+
+        recognitionVideo.srcObject
+            .getTracks()
+            .forEach(track => track.stop());
+
+        recognitionVideo.srcObject = null;
+
+    }
+
+    if (recognitionStatus) {
+
+        recognitionStatus.innerText =
+            "Recognition stopped.";
+
+    }
+
+}
+
+
+/* =========================================================
+   AUTOMATIC ATTENDANCE
+========================================================= */
+
+async function markAutomaticAttendance(student) {
+
+    const now = new Date();
+
+
+    const dateString =
+        `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+
+
+    const timeString =
+        now.toLocaleTimeString();
+
+
+    const q = query(
+        collection(db, "attendance"),
+        where("userId", "==", currentUser.uid),
+        where("studentId", "==", student.studentId),
+        where("date", "==", dateString)
+    );
+
+
+    const snapshot =
+        await getDocs(q);
+
+
+    if (!snapshot.empty) {
+
+        return;
+
+    }
+
+
+    await addDoc(
+        collection(db, "attendance"),
+        {
+
+            studentId:
+                student.studentId,
+
+            name:
+                student.name,
+
+            email:
+                student.email || "",
+
+            date:
+                dateString,
+
+            time:
+                timeString,
+
+            status:
+                "Present",
+
+            method:
+                "Face Recognition",
+
+            userId:
+                currentUser.uid,
+
+            createdAt:
+                serverTimestamp()
+
+        }
+    );
+
+
+    alert(
+        `${student.name} marked Present automatically!`
+    );
+
+
+    await loadAttendance();
+
+    await loadDashboard();
+
+    await loadReport();
+
+}
+
+
+/* =========================================================
+   MANUAL ATTENDANCE
+========================================================= */
+
+const manualAttendanceForm =
+    document.getElementById("manualAttendanceForm");
+
+
+manualAttendanceForm.addEventListener(
+    "submit",
+    async (e) => {
+
+        e.preventDefault();
+
+
+        const studentId =
+            document.getElementById(
+                "manualStudent"
+            ).value;
+
+
+        if (!studentId) {
+
+            alert("Select a student.");
+            return;
 
         }
 
-    </style>
+
+        const q = query(
+            collection(db, "students"),
+            where("userId", "==", currentUser.uid)
+        );
+
+
+        const snapshot =
+            await getDocs(q);
+
+
+        let selectedStudent = null;
+
+
+        snapshot.forEach(docSnap => {
+
+            const student =
+                docSnap.data();
+
+            if (
+                student.studentId ===
+                studentId
+            ) {
+
+                selectedStudent = student;
+
+            }
+
+        });
+
+
+        if (!selectedStudent) {
+
+            alert("Student not found.");
+            return;
+
+        }
+
+
+        const now = new Date();
+
+
+        const dateString =
+            `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+
+
+        const timeString =
+            now.toLocaleTimeString();
+
+
+        const duplicateQuery =
+            query(
+                collection(db, "attendance"),
+                where(
+                    "userId",
+                    "==",
+                    currentUser.uid
+                ),
+                where(
+                    "studentId",
+                    "==",
+                    studentId
+                ),
+                where(
+                    "date",
+                    "==",
+                    dateString
+                )
+            );
+
+
+        const duplicateSnapshot =
+            await getDocs(
+                duplicateQuery
+            );
+
+
+        if (!duplicateSnapshot.empty) {
+
+            alert(
+                "Attendance already marked today."
+            );
+
+            return;
+
+        }
+
+
+        await addDoc(
+            collection(db, "attendance"),
+            {
+
+                studentId:
+                    selectedStudent.studentId,
+
+                name:
+                    selectedStudent.name,
+
+                email:
+                    selectedStudent.email || "",
+
+                date:
+                    dateString,
+
+                time:
+                    timeString,
+
+                status:
+                    "Present",
+
+                method:
+                    "Manual",
+
+                userId:
+                    currentUser.uid,
+
+                createdAt:
+                    serverTimestamp()
+
+            }
+        );
+
+
+        alert("Attendance marked successfully!");
+
+
+        manualAttendanceForm.reset();
+
+        await loadAttendance();
+
+        await loadDashboard();
+
+        await loadReport();
+
+    }
+);
+
+
+/* =========================================================
+   LOAD MANUAL STUDENT SELECT
+========================================================= */
+
+async function loadManualStudents() {
+
+    const select =
+        document.getElementById(
+            "manualStudent"
+        );
+
+    if (!select || !currentUser)
+        return;
+
+
+    const q = query(
+        collection(db, "students"),
+        where("userId", "==", currentUser.uid)
+    );
+
+
+    const snapshot =
+        await getDocs(q);
+
+
+    select.innerHTML =
+        '<option value="">Select student</option>';
+
+
+    snapshot.forEach(docSnap => {
+
+        const student =
+            docSnap.data();
+
+
+        const option =
+            document.createElement("option");
+
+
+        option.value =
+            student.studentId;
+
+
+        option.textContent =
+            `${student.studentId} - ${student.name}`;
+
+
+        select.appendChild(option);
+
+    });
+
+}
+
+
+/* =========================================================
+   LOAD ATTENDANCE
+========================================================= */
+
+async function loadAttendance() {
+
+    if (!currentUser)
+        return;
+
+
+    const q = query(
+        collection(db, "attendance"),
+        where("userId", "==", currentUser.uid)
+    );
+
+
+    const snapshot =
+        await getDocs(q);
+
+
+    const tbody =
+        document.getElementById(
+            "attendanceTableBody"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    snapshot.forEach(docSnap => {
+
+        const attendance =
+            docSnap.data();
+
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${escapeHTML(attendance.studentId || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(attendance.name || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(attendance.date || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(attendance.time || "")}
+            </td>
+
+            <td>
+                <span class="badge success">
+                    ${escapeHTML(attendance.status || "Present")}
+                </span>
+            </td>
+
+            <td>
+                ${escapeHTML(attendance.method || "Manual")}
+            </td>
+
+        `;
+
+
+        tbody.appendChild(row);
+
+    });
+
+
+    document.getElementById(
+        "attendanceCount"
+    ).innerText =
+        snapshot.size;
+
+
+    await loadManualStudents();
+
+}
+
+
+/* =========================================================
+   RECENT ATTENDANCE
+========================================================= */
+
+function loadRecentAttendance(snapshot) {
+
+    const container =
+        document.getElementById(
+            "recentAttendance"
+        );
+
+
+    container.innerHTML = "";
+
+
+    const records = [];
+
+
+    snapshot.forEach(docSnap => {
+
+        records.push({
+            id: docSnap.id,
+            ...docSnap.data()
+        });
+
+    });
+
+
+    records
+        .slice(-5)
+        .reverse()
+        .forEach(record => {
+
+            const item =
+                document.createElement("div");
+
+
+            item.className =
+                "recent-item";
+
+
+            item.innerHTML = `
+
+                <div class="recent-avatar">
+                    ${getInitials(record.name)}
+                </div>
+
+                <div class="recent-info">
+                    <strong>
+                        ${escapeHTML(record.name || "Unknown")}
+                    </strong>
+
+                    <span>
+                        ${escapeHTML(record.date || "")}
+                        •
+                        ${escapeHTML(record.time || "")}
+                    </span>
+                </div>
+
+                <span class="badge success">
+                    Present
+                </span>
+
+            `;
+
+
+            container.appendChild(item);
+
+        });
+
+}
+
+
+/* =========================================================
+   REPORT
+========================================================= */
+
+async function loadReport() {
+
+    if (!currentUser)
+        return;
+
+
+    const studentQuery =
+        query(
+            collection(db, "students"),
+            where("userId", "==", currentUser.uid)
+        );
+
+
+    const attendanceQuery =
+        query(
+            collection(db, "attendance"),
+            where("userId", "==", currentUser.uid)
+        );
+
+
+    const studentSnapshot =
+        await getDocs(studentQuery);
+
+
+    const attendanceSnapshot =
+        await getDocs(attendanceQuery);
+
+
+    const totalStudents =
+        studentSnapshot.size;
+
+
+    const totalAttendance =
+        attendanceSnapshot.size;
+
+
+    document.getElementById(
+        "reportStudents"
+    ).innerText =
+        totalStudents;
+
+
+    document.getElementById(
+        "reportAttendance"
+    ).innerText =
+        totalAttendance;
+
+
+    let faceRegistered = 0;
+
+
+    studentSnapshot.forEach(docSnap => {
+
+        if (
+            docSnap.data().faceRegistered
+        ) {
+
+            faceRegistered++;
+
+        }
+
+    });
+
+
+    document.getElementById(
+        "reportFaces"
+    ).innerText =
+        faceRegistered;
+
+
+    let percentage = 0;
+
+
+    if (totalStudents > 0) {
+
+        percentage =
+            Math.round(
+                (
+                    totalAttendance /
+                    totalStudents
+                ) * 100
+            );
+
+    }
+
+
+    document.getElementById(
+        "attendancePercentage"
+    ).innerText =
+        percentage + "%";
+
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+document.getElementById(
+    "profileForm"
+).addEventListener(
+    "submit",
+    async (e) => {
+
+        e.preventDefault();
+
+
+        if (!currentUser)
+            return;
+
+
+        const name =
+            document.getElementById(
+                "profileFullName"
+            ).value.trim();
+
+
+        try {
+
+            await updateProfile(
+                currentUser,
+                {
+                    displayName: name
+                }
+            );
+
+
+            document.getElementById(
+                "profileName"
+            ).innerText = name;
+
+
+            document.getElementById(
+                "sidebarName"
+            ).innerText = name;
+
+
+            alert(
+                "Profile updated successfully!"
+            );
+
+
+        } catch (error) {
+
+            alert(error.message);
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   UTILITY FUNCTIONS
+========================================================= */
+
+function getInitials(name) {
+
+    if (!name)
+        return "ST";
+
+
+    return name
+        .split(" ")
+        .map(word => word.charAt(0))
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
+
+}
+
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
+setTimeout(
+    () => {
+
+        if (currentUser) {
+
+            loadStudentSelect();
+            loadManualStudents();
+
+        }
+
+    },
+    1500
+);
+
+</script>
+
+
+<!-- =====================================================
+     FACE API
+===================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+
+<!-- =====================================================
+     CSS
+===================================================== -->
+
+<style>
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background: #f5f7fb;
+    color: #1f2937;
+}
+
+
+/* ================= AUTH ================= */
+
+#authPage {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(
+        135deg,
+        #111827,
+        #2563eb
+    );
+    padding: 20px;
+}
+
+.auth-card {
+    width: 420px;
+    max-width: 100%;
+    background: white;
+    padding: 35px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.auth-logo .logo-icon {
+    width: 70px;
+    height: 70px;
+    margin: auto;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2563eb;
+    color: white;
+    font-size: 32px;
+}
+
+.auth-logo h1 {
+    margin-top: 15px;
+}
+
+.auth-logo p {
+    color: #6b7280;
+    margin-top: 5px;
+}
+
+
+/* ================= INPUT ================= */
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 600;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    outline: none;
+    background: white;
+}
+
+input:focus,
+select:focus {
+    border-color: #2563eb;
+}
+
+
+/* ================= BUTTON ================= */
+
+button {
+    cursor: pointer;
+    border: none;
+}
+
+.btn {
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: .2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-success {
+    background: #16a34a;
+    color: white;
+}
+
+.btn-danger {
+    background: #dc2626;
+    color: white;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 20px;
+    color: #6b7280;
+}
+
+.auth-switch button {
+    background: none;
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.auth-message {
+    color: #dc2626;
+    margin-top: 12px;
+    text-align: center;
+}
+
+
+/* ================= APP ================= */
+
+#app {
+    display: none;
+    min-height: 100vh;
+}
+
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+    width: 260px;
+    background: #111827;
+    color: white;
+    min-height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    padding: 22px;
+    z-index: 10;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 35px;
+}
+
+.logo-icon-small {
+    width: 42px;
+    height: 42px;
+    background: #2563eb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-text h2 {
+    font-size: 17px;
+}
+
+.logo-text span {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+
+.nav-item {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 10px;
+    margin-bottom: 7px;
+    color: #cbd5e1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-item:hover {
+    background: #1f2937;
+    color: white;
+}
+
+.nav-item.active {
+    background: #2563eb;
+    color: white;
+}
+
+.sidebar-user {
+    position: absolute;
+    bottom: 20px;
+    left: 22px;
+    right: 22px;
+    padding-top: 15px;
+    border-top: 1px solid #374151;
+}
+
+.sidebar-user strong {
+    display: block;
+}
+
+.sidebar-user span {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+
+/* ================= MAIN ================= */
+
+.main {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    min-height: 100vh;
+    padding: 30px;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.page-header h1 {
+    font-size: 28px;
+}
+
+.page-header p {
+    color: #6b7280;
+    margin-top: 5px;
+}
+
+
+/* ================= CARDS ================= */
+
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.05);
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: white;
+    padding: 22px;
+    border-radius: 16px;
+    box-shadow: 0 5px 20px rgba(0,0,0,.05);
+}
+
+.stat-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    background: #eff6ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 15px;
+}
+
+.stat-card h3 {
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+.stat-card p {
+    color: #6b7280;
+}
+
+
+/* ================= GRID ================= */
+
+.two-column {
+    display: grid;
+    grid-template-columns:
+        1fr 1fr;
+    gap: 20px;
+}
+
+
+/* ================= TABLE ================= */
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    text-align: left;
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+td {
+    font-size: 14px;
+}
+
+
+/* ================= BADGES ================= */
+
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+
+/* ================= RECENT ================= */
+
+.recent-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.recent-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.recent-info {
+    flex: 1;
+}
+
+.recent-info strong {
+    display: block;
+}
+
+.recent-info span {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+
+/* ================= CAMERA ================= */
+
+.camera-container {
+    background: #111827;
+    border-radius: 15px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 700px;
+    margin: 20px auto;
+    position: relative;
+}
+
+.camera-container video {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 300px;
+    object-fit: cover;
+}
+
+.camera-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.camera-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.status-message {
+    text-align: center;
+    margin-top: 15px;
+    padding: 12px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    color: #374151;
+}
+
+
+/* ================= PROFILE ================= */
+
+.profile-box {
+    max-width: 650px;
+}
+
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 1100px) {
+
+    .stats-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .two-column {
+        grid-template-columns:
+            1fr;
+    }
+
+}
+
+
+@media (max-width: 750px) {
+
+    .sidebar {
+        width: 70px;
+        padding: 12px;
+    }
+
+    .logo-text,
+    .nav-item span,
+    .sidebar-user {
+        display: none;
+    }
+
+    .main {
+        margin-left: 70px;
+        width: calc(100% - 70px);
+        padding: 18px;
+    }
+
+    .stats-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .page-header h1 {
+        font-size: 22px;
+    }
+
+}
+
+</style>
 
 </head>
 
@@ -606,2516 +2420,1137 @@
 
 <!-- =====================================================
      LOGIN / REGISTER
-====================================================== -->
+===================================================== -->
 
 <div id="authPage">
 
-    <div class="login-card">
+    <div class="auth-card">
 
-        <div class="logo">
-            👤
+        <div class="auth-logo">
+
+            <div class="logo-icon">
+                👤
+            </div>
+
+            <h1>SmartFace</h1>
+
+            <p>Face Recognition Attendance</p>
+
         </div>
-
-        <h1 id="authTitle">
-            Welcome Back
-        </h1>
-
-        <p class="subtitle">
-            Smart Face Attendance System
-        </p>
 
 
         <!-- LOGIN -->
 
-        <div id="loginForm">
+        <div id="loginBox">
 
-            <div class="input-group">
+            <form id="loginForm">
 
-                <label>Email</label>
+                <div class="form-group">
 
-                <input
-                    type="email"
-                    id="loginEmail"
-                    placeholder="Enter your email">
+                    <label>Email</label>
 
-            </div>
+                    <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="Enter email"
+                        required
+                    >
 
-
-            <div class="input-group">
-
-                <label>Password</label>
-
-                <input
-                    type="password"
-                    id="loginPassword"
-                    placeholder="Enter your password">
-
-            </div>
+                </div>
 
 
-            <button
-                class="primary-btn"
-                id="loginBtn">
+                <div class="form-group">
 
-                Login
+                    <label>Password</label>
 
-            </button>
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Enter password"
+                        required
+                    >
+
+                </div>
 
 
-            <p
-                class="message"
-                id="loginMessage">
-            </p>
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-full"
+                >
+                    Login
+                </button>
+
+            </form>
 
 
-            <p class="switch-auth">
+            <div class="auth-switch">
 
                 Don't have an account?
 
                 <button
-                    class="link-btn"
-                    id="showRegister">
-
-                    Create Account
-
+                    type="button"
+                    id="showRegister"
+                >
+                    Register
                 </button>
 
-            </p>
+            </div>
 
         </div>
 
 
         <!-- REGISTER -->
 
-        <div id="registerForm"
-             style="display:none;">
+        <div
+            id="registerBox"
+            style="display:none;"
+        >
 
-            <div class="input-group">
+            <form id="registerForm">
 
-                <label>Email</label>
+                <div class="form-group">
 
-                <input
-                    type="email"
-                    id="registerEmail"
-                    placeholder="Enter your email">
+                    <label>Full Name</label>
 
-            </div>
+                    <input
+                        type="text"
+                        id="registerName"
+                        placeholder="Enter your name"
+                        required
+                    >
 
-
-            <div class="input-group">
-
-                <label>Password</label>
-
-                <input
-                    type="password"
-                    id="registerPassword"
-                    placeholder="Minimum 6 characters">
-
-            </div>
+                </div>
 
 
-            <div class="input-group">
+                <div class="form-group">
 
-                <label>Confirm Password</label>
+                    <label>Email</label>
 
-                <input
-                    type="password"
-                    id="confirmPassword"
-                    placeholder="Confirm password">
+                    <input
+                        type="email"
+                        id="registerEmail"
+                        placeholder="Enter email"
+                        required
+                    >
 
-            </div>
-
-
-            <button
-                class="primary-btn"
-                id="registerBtn">
-
-                Create Account
-
-            </button>
+                </div>
 
 
-            <p
-                class="message"
-                id="registerMessage">
-            </p>
+                <div class="form-group">
+
+                    <label>Password</label>
+
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        placeholder="Minimum 6 characters"
+                        minlength="6"
+                        required
+                    >
+
+                </div>
 
 
-            <p class="switch-auth">
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-full"
+                >
+                    Create Account
+                </button>
+
+            </form>
+
+
+            <div class="auth-switch">
 
                 Already have an account?
 
                 <button
-                    class="link-btn"
-                    id="showLogin">
-
+                    type="button"
+                    id="showLogin"
+                >
                     Login
-
                 </button>
 
-            </p>
+            </div>
 
         </div>
+
+
+        <div
+            id="authMessage"
+            class="auth-message"
+        ></div>
 
     </div>
 
 </div>
 
 
+
 <!-- =====================================================
      APPLICATION
-====================================================== -->
+===================================================== -->
 
 <div id="app">
 
 
-    <!-- SIDEBAR -->
+<!-- SIDEBAR -->
 
-    <aside class="sidebar">
+<aside class="sidebar">
 
-        <div class="brand">
+    <div class="logo">
 
-            <div class="brand-icon">
-                👤
-            </div>
+        <div class="logo-icon-small">
+            👤
+        </div>
 
-            <div>
+        <div class="logo-text">
 
-                <h2>SmartAttend</h2>
+            <h2>SmartFace</h2>
 
-                <small>Management</small>
-
-            </div>
+            <span>Attendance System</span>
 
         </div>
 
+    </div>
 
-        <p class="nav-title">
-            Main Menu
-        </p>
 
+    <div
+        class="nav-item active"
+        data-page="dashboard"
+    >
+        📊
+        <span>Dashboard</span>
+    </div>
 
-        <button
-            class="nav-item active"
-            data-page="dashboard">
 
-            📊 Dashboard
+    <div
+        class="nav-item"
+        data-page="students"
+    >
+        👨‍🎓
+        <span>Students</span>
+    </div>
 
-        </button>
 
+    <div
+        class="nav-item"
+        data-page="face"
+    >
+        📷
+        <span>Face Registration</span>
+    </div>
 
-        <button
-            class="nav-item"
-            data-page="students">
 
-            👨‍🎓 Students
+    <div
+        class="nav-item"
+        data-page="attendance"
+    >
+        📝
+        <span>Attendance</span>
+    </div>
 
-        </button>
 
+    <div
+        class="nav-item"
+        data-page="reports"
+    >
+        📈
+        <span>Reports</span>
+    </div>
 
-        <button
-            class="nav-item"
-            data-page="face">
 
-            📷 Face Registration
+    <div
+        class="nav-item"
+        data-page="profile"
+    >
+        👤
+        <span>Profile</span>
+    </div>
 
-        </button>
 
+    <div
+        class="nav-item"
+        data-page="settings"
+    >
+        ⚙️
+        <span>Settings</span>
+    </div>
 
-        <button
-            class="nav-item"
-            data-page="attendance">
 
-            📋 Attendance
+    <div
+        class="nav-item"
+        id="logoutBtn"
+    >
+        🚪
+        <span>Logout</span>
+    </div>
 
-        </button>
 
+    <div class="sidebar-user">
 
-        <button
-            class="nav-item"
-            data-page="reports">
+        <strong id="sidebarName">
+            Administrator
+        </strong>
 
-            📈 Reports
+        <span id="sidebarEmail">
+            -
+        </span>
 
-        </button>
+    </div>
 
+</aside>
 
-        <p class="nav-title">
-            System
-        </p>
 
 
-        <button
-            class="nav-item"
-            data-page="profile">
+<!-- MAIN -->
 
-            👤 Profile
-
-        </button>
-
-
-        <button
-            class="nav-item"
-            data-page="settings">
-
-            ⚙️ Settings
-
-        </button>
-
-
-        <button
-            class="logout"
-            id="logoutBtn">
-
-            Logout
-
-        </button>
-
-    </aside>
-
-
-    <!-- MAIN -->
-
-    <main class="main">
-
-
-        <!-- TOPBAR -->
-
-        <div class="topbar">
-
-            <div>
-
-                <h2 id="pageTitle">
-                    Dashboard
-                </h2>
-
-            </div>
-
-
-            <div class="user-area">
-
-                <div>
-
-                    <strong id="topUser">
-                        User
-                    </strong>
-
-                    <br>
-
-                    <small>
-                        Administrator
-                    </small>
-
-                </div>
-
-
-                <div class="avatar"
-                     id="avatar">
-
-                    U
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <div class="content">
-
-
-            <!-- =================================================
-                 DASHBOARD
-            ================================================== -->
-
-            <section
-                class="page active"
-                id="dashboard">
-
-
-                <div class="welcome">
-
-                    <h1>
-                        Welcome to SmartAttend 👋
-                    </h1>
-
-                    <p>
-                        Manage students, face recognition
-                        and attendance from one place.
-                    </p>
-
-                </div>
-
-
-                <!-- STATISTICS -->
-
-                <div class="stats">
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-top">
-
-                            <div>
-
-                                <p>
-                                    Total Students
-                                </p>
-
-                                <h3 id="totalStudents">
-                                    0
-                                </h3>
-
-                            </div>
-
-                            <div class="stat-icon">
-                                👨‍🎓
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-top">
-
-                            <div>
-
-                                <p>
-                                    Present Today
-                                </p>
-
-                                <h3 id="presentToday">
-                                    0
-                                </h3>
-
-                            </div>
-
-                            <div class="stat-icon">
-                                ✅
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-top">
-
-                            <div>
-
-                                <p>
-                                    Absent Today
-                                </p>
-
-                                <h3 id="absentToday">
-                                    0
-                                </h3>
-
-                            </div>
-
-                            <div class="stat-icon">
-                                ❌
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="stat-card">
-
-                        <div class="stat-top">
-
-                            <div>
-
-                                <p>
-                                    Attendance Rate
-                                </p>
-
-                                <h3 id="attendanceRate">
-                                    0%
-                                </h3>
-
-                            </div>
-
-                            <div class="stat-icon">
-                                📈
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- QUICK ACTIONS -->
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Quick Actions
-                        </h3>
-
-                    </div>
-
-
-                    <button
-                        class="btn btn-primary"
-                        onclick="openPage('students')">
-
-                        ➕ Add Student
-
-                    </button>
-
-
-                    <button
-                        class="btn btn-success"
-                        onclick="openPage('face')">
-
-                        📷 Register Face
-
-                    </button>
-
-
-                    <button
-                        class="btn btn-secondary"
-                        onclick="openPage('attendance')">
-
-                        📋 View Attendance
-
-                    </button>
-
-                </div>
-
-
-                <!-- RECENT ATTENDANCE -->
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Recent Attendance
-                        </h3>
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="loadAttendance()">
-
-                            Refresh
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="table-container">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>
-                                        Student
-                                    </th>
-
-                                    <th>
-                                        ID
-                                    </th>
-
-                                    <th>
-                                        Date
-                                    </th>
-
-                                    <th>
-                                        Time
-                                    </th>
-
-                                    <th>
-                                        Status
-                                    </th>
-
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody
-                                id="recentAttendance">
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 STUDENTS
-            ================================================== -->
-
-            <section
-                class="page"
-                id="students">
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Add New Student
-                        </h3>
-
-                    </div>
-
-
-                    <div class="form-grid">
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Student Name
-                            </label>
-
-                            <input
-                                type="text"
-                                id="studentName"
-                                placeholder="Enter student name">
-
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Student ID
-                            </label>
-
-                            <input
-                                type="text"
-                                id="studentId"
-                                placeholder="Example: STU001">
-
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Course
-                            </label>
-
-                            <input
-                                type="text"
-                                id="studentCourse"
-                                placeholder="Example: BCA">
-
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Semester
-                            </label>
-
-                            <select id="studentSemester">
-
-                                <option value="">
-                                    Select Semester
-                                </option>
-
-                                <option>
-                                    1st Semester
-                                </option>
-
-                                <option>
-                                    2nd Semester
-                                </option>
-
-                                <option>
-                                    3rd Semester
-                                </option>
-
-                                <option>
-                                    4th Semester
-                                </option>
-
-                                <option>
-                                    5th Semester
-                                </option>
-
-                                <option>
-                                    6th Semester
-                                </option>
-
-                            </select>
-
-                        </div>
-
-
-                    </div>
-
-
-                    <button
-                        class="btn btn-success"
-                        id="saveStudentBtn">
-
-                        Save Student
-
-                    </button>
-
-
-                    <p
-                        class="message"
-                        id="studentMessage">
-                    </p>
-
-                </div>
-
-
-                <!-- STUDENT LIST -->
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Student List
-                        </h3>
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="loadStudents()">
-
-                            Refresh
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="table-container">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>
-                                        Name
-                                    </th>
-
-                                    <th>
-                                        Student ID
-                                    </th>
-
-                                    <th>
-                                        Course
-                                    </th>
-
-                                    <th>
-                                        Semester
-                                    </th>
-
-                                    <th>
-                                        Email
-                                    </th>
-
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody
-                                id="studentTable">
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 FACE REGISTRATION
-            ================================================== -->
-
-            <section
-                class="page"
-                id="face">
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Face Registration
-                        </h3>
-
-                    </div>
-
-
-                    <div class="face-status">
-
-                        📷 Position the student's face
-                        clearly in front of the camera.
-
-                    </div>
-
-
-                    <div class="camera-container">
-
-                        <video
-                            id="camera"
-                            autoplay
-                            playsinline>
-                        </video>
-
-
-                        <canvas
-                            id="canvas">
-                        </canvas>
-
-
-                        <br>
-
-
-                        <button
-                            class="btn btn-primary"
-                            id="startCameraBtn">
-
-                            Start Camera
-
-                        </button>
-
-
-                        <button
-                            class="btn btn-success"
-                            id="captureBtn">
-
-                            Capture Face
-
-                        </button>
-
-
-                        <button
-                            class="btn btn-danger"
-                            id="stopCameraBtn">
-
-                            Stop Camera
-
-                        </button>
-
-
-                        <p
-                            class="message"
-                            id="faceMessage">
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <h3>
-                        Face Registration Status
-                    </h3>
-
-                    <br>
-
-                    <p>
-                        Face registration will be connected
-                        to the AI recognition service in the
-                        next development stage.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 ATTENDANCE
-            ================================================== -->
-
-            <section
-                class="page"
-                id="attendance">
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Mark Attendance
-                        </h3>
-
-                    </div>
-
-
-                    <div class="form-grid">
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Student Name
-                            </label>
-
-                            <input
-                                type="text"
-                                id="attendanceName"
-                                placeholder="Student name">
-
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Student ID
-                            </label>
-
-                            <input
-                                type="text"
-                                id="attendanceId"
-                                placeholder="Student ID">
-
-                        </div>
-
-                    </div>
-
-
-                    <button
-                        class="btn btn-success"
-                        id="attendanceBtn">
-
-                        ✅ Mark Present
-
-                    </button>
-
-
-                    <p
-                        class="message"
-                        id="attendanceMessage">
-                    </p>
-
-                </div>
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Attendance Records
-                        </h3>
-
-                        <button
-                            class="btn btn-primary"
-                            onclick="loadAttendance()">
-
-                            Load Records
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="table-container">
-
-                        <table>
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>
-                                        Name
-                                    </th>
-
-                                    <th>
-                                        Student ID
-                                    </th>
-
-                                    <th>
-                                        Date
-                                    </th>
-
-                                    <th>
-                                        Time
-                                    </th>
-
-                                    <th>
-                                        Status
-                                    </th>
-
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody
-                                id="attendanceTable">
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 REPORTS
-            ================================================== -->
-
-            <section
-                class="page"
-                id="reports">
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            Attendance Reports
-                        </h3>
-
-                    </div>
-
-
-                    <div class="report-grid">
-
-
-                        <div class="report-box">
-
-                            <h2 id="reportStudents">
-                                0
-                            </h2>
-
-                            <p>
-                                Total Students
-                            </p>
-
-                        </div>
-
-
-                        <div class="report-box">
-
-                            <h2 id="reportPresent">
-                                0
-                            </h2>
-
-                            <p>
-                                Total Attendance
-                            </p>
-
-                        </div>
-
-
-                        <div class="report-box">
-
-                            <h2 id="reportRate">
-                                0%
-                            </h2>
-
-                            <p>
-                                Overall Rate
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card">
-
-                    <h3>
-                        Report Information
-                    </h3>
-
-                    <br>
-
-                    <p>
-                        Attendance reports are generated
-                        from the records stored in Firebase
-                        Firestore.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 PROFILE
-            ================================================== -->
-
-            <section
-                class="page"
-                id="profile">
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            My Profile
-                        </h3>
-
-                    </div>
-
-
-                    <div class="form-grid">
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Email
-                            </label>
-
-                            <input
-                                type="text"
-                                id="profileEmail"
-                                readonly>
-
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                User ID
-                            </label>
-
-                            <input
-                                type="text"
-                                id="profileUid"
-                                readonly>
-
-                        </div>
-
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 SETTINGS
-            ================================================== -->
-
-            <section
-                class="page"
-                id="settings">
-
-
-                <div class="card">
-
-                    <div class="card-header">
-
-                        <h3>
-                            System Settings
-                        </h3>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Attendance Status
-                        </label>
-
-                        <select id="statusSetting">
-
-                            <option value="Present">
-                                Present
-                            </option>
-
-                            <option value="Absent">
-                                Absent
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <button
-                        class="btn btn-primary"
-                        onclick="saveSettings()">
-
-                        Save Settings
-
-                    </button>
-
-
-                    <p
-                        class="message"
-                        id="settingsMessage">
-                    </p>
-
-                </div>
-
-            </section>
-
-
-        </div>
-
-    </main>
-
-</div>
+<main class="main">
 
 
 <!-- =====================================================
-     FIREBASE
-====================================================== -->
+     DASHBOARD
+===================================================== -->
 
-<script type="module">
+<section
+    class="page active"
+    id="dashboard"
+>
 
+    <div class="page-header">
 
-    /* ===============================
-       IMPORT FIREBASE
-    ================================ */
+        <div>
 
-    import {
-        initializeApp
-    }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+            <h1>Dashboard</h1>
 
+            <p>
+                Welcome to your SmartFace Attendance System.
+            </p>
 
-    import {
-        getAuth,
-        setPersistence,
-        browserSessionPersistence,
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword,
-        signOut,
-        onAuthStateChanged
-    }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        </div>
 
+    </div>
 
-    import {
-        getFirestore,
-        collection,
-        addDoc,
-        getDocs,
-        query,
-        orderBy,
-        serverTimestamp
-    }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+    <div class="stats-grid">
 
-    /* ===============================
-       FIREBASE CONFIG
-    ================================ */
 
-    const firebaseConfig = {
+        <div class="stat-card">
 
-        apiKey:
-            "AIzaSyC8KMuO0yg9gN4MD3Y3CV8YNWsKCvV8L-Y",
+            <div class="stat-icon">
+                👨‍🎓
+            </div>
 
-        authDomain:
-            "face-recognition-attenda-328c0.firebaseapp.com",
+            <h3 id="totalStudents">
+                0
+            </h3>
 
-        projectId:
-            "face-recognition-attenda-328c0",
+            <p>Total Students</p>
 
-        storageBucket:
-            "face-recognition-attenda-328c0.firebasestorage.app",
+        </div>
 
-        messagingSenderId:
-            "289877248453",
 
-        appId:
-            "1:289877248453:web:30db49d06316a402e123ac"
+        <div class="stat-card">
 
-    };
+            <div class="stat-icon">
+                📝
+            </div>
 
+            <h3 id="totalAttendance">
+                0
+            </h3>
 
-    /* ===============================
-       INITIALIZE
-    ================================ */
+            <p>Total Attendance</p>
 
-    const app =
-        initializeApp(firebaseConfig);
+        </div>
 
-    const auth =
-        getAuth(app);
 
-    const db =
-        getFirestore(app);
+        <div class="stat-card">
 
+            <div class="stat-icon">
+                📅
+            </div>
 
-    setPersistence(
-        auth,
-        browserSessionPersistence
-    );
+            <h3 id="todayAttendance">
+                0
+            </h3>
 
+            <p>Today's Attendance</p>
 
-    /* ===============================
-       AUTH PAGE
-    ================================ */
+        </div>
 
-    const authPage =
-        document.getElementById("authPage");
 
-    const appPage =
-        document.getElementById("app");
+        <div class="stat-card">
 
+            <div class="stat-icon">
+                🤖
+            </div>
 
-    const loginForm =
-        document.getElementById("loginForm");
+            <h3 id="faceRegistered">
+                0
+            </h3>
 
-    const registerForm =
-        document.getElementById("registerForm");
+            <p>Faces Registered</p>
 
+        </div>
 
-    document
-        .getElementById("showRegister")
-        .addEventListener("click", () => {
 
-            loginForm.style.display = "none";
+    </div>
 
-            registerForm.style.display = "block";
 
-            document.getElementById(
-                "authTitle"
-            ).innerText = "Create Account";
+    <div class="two-column">
 
-        });
 
+        <div class="card">
 
-    document
-        .getElementById("showLogin")
-        .addEventListener("click", () => {
+            <h2>Recent Attendance</h2>
 
-            registerForm.style.display = "none";
+            <br>
 
-            loginForm.style.display = "block";
+            <div id="recentAttendance"></div>
 
-            document.getElementById(
-                "authTitle"
-            ).innerText = "Welcome Back";
+        </div>
 
-        });
 
+        <div class="card">
 
-    /* ===============================
-       LOGIN
-    ================================ */
+            <h2>Quick Actions</h2>
 
-    document
-        .getElementById("loginBtn")
-        .addEventListener("click", async () => {
+            <br>
 
-            const email =
-                document.getElementById(
-                    "loginEmail"
-                ).value.trim();
+            <div
+                style="
+                    display:flex;
+                    gap:10px;
+                    flex-wrap:wrap;
+                "
+            >
 
-            const password =
-                document.getElementById(
-                    "loginPassword"
-                ).value;
+                <button
+                    class="btn btn-primary"
+                    onclick="
+                    document.querySelector('[data-page=students]').click()
+                    "
+                >
+                    Add Student
+                </button>
 
 
-            const message =
-                document.getElementById(
-                    "loginMessage"
-                );
+                <button
+                    class="btn btn-success"
+                    onclick="
+                    document.querySelector('[data-page=face]').click()
+                    "
+                >
+                    Register Face
+                </button>
 
 
-            if (!email || !password) {
+                <button
+                    class="btn btn-secondary"
+                    onclick="
+                    document.querySelector('[data-page=attendance]').click()
+                    "
+                >
+                    Attendance
+                </button>
 
-                message.innerText =
-                    "Please enter email and password.";
+            </div>
 
-                return;
+        </div>
 
-            }
 
+    </div>
 
-            try {
+</section>
 
-                await signInWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
 
-                message.innerText =
-                    "Login successful!";
 
+<!-- =====================================================
+     STUDENTS
+===================================================== -->
 
-            } catch (error) {
+<section
+    class="page"
+    id="students"
+>
 
-                message.innerText =
-                    getErrorMessage(error);
+    <div class="page-header">
 
-            }
+        <div>
 
-        });
+            <h1>Student Management</h1>
 
+            <p>
+                Add and manage registered students.
+            </p>
 
-    /* ===============================
-       REGISTER
-    ================================ */
+        </div>
 
-    document
-        .getElementById("registerBtn")
-        .addEventListener("click", async () => {
+    </div>
 
-            const email =
-                document.getElementById(
-                    "registerEmail"
-                ).value.trim();
 
-            const password =
-                document.getElementById(
-                    "registerPassword"
-                ).value;
+    <div class="card">
 
-            const confirm =
-                document.getElementById(
-                    "confirmPassword"
-                ).value;
+        <h2>Add Student</h2>
 
+        <br>
 
-            const message =
-                document.getElementById(
-                    "registerMessage"
-                );
 
+        <form id="studentForm">
 
-            if (!email || !password || !confirm) {
+            <div class="two-column">
 
-                message.innerText =
-                    "Please fill all fields.";
+                <div class="form-group">
 
-                return;
+                    <label>Student Name</label>
 
-            }
+                    <input
+                        type="text"
+                        id="studentName"
+                        placeholder="Enter student name"
+                        required
+                    >
 
+                </div>
 
-            if (password !== confirm) {
 
-                message.innerText =
-                    "Passwords do not match.";
+                <div class="form-group">
 
-                return;
+                    <label>Student ID</label>
 
-            }
+                    <input
+                        type="text"
+                        id="studentId"
+                        placeholder="Example: STU001"
+                        required
+                    >
 
+                </div>
 
-            if (password.length < 6) {
 
-                message.innerText =
-                    "Password must contain at least 6 characters.";
+                <div class="form-group">
 
-                return;
+                    <label>Course</label>
 
-            }
+                    <input
+                        type="text"
+                        id="studentCourse"
+                        placeholder="Example: BCA"
+                    >
 
+                </div>
 
-            try {
 
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
+                <div class="form-group">
 
+                    <label>Semester</label>
 
-                message.innerText =
-                    "Account created successfully!";
+                    <input
+                        type="text"
+                        id="studentSemester"
+                        placeholder="Example: 3"
+                    >
 
+                </div>
 
-            } catch (error) {
 
-                message.innerText =
-                    getErrorMessage(error);
+                <div class="form-group">
 
-            }
+                    <label>Email</label>
 
-        });
+                    <input
+                        type="email"
+                        id="studentEmail"
+                        placeholder="Student email"
+                    >
 
+                </div>
 
-    /* ===============================
-       FIREBASE ERROR
-    ================================ */
+            </div>
 
-    function getErrorMessage(error) {
 
-        if (
-            error.code ===
-            "auth/email-already-in-use"
-        ) {
+            <button
+                class="btn btn-primary"
+                type="submit"
+            >
+                Add Student
+            </button>
 
-            return "Email already registered.";
+        </form>
 
-        }
+    </div>
 
-        if (
-            error.code ===
-            "auth/invalid-email"
-        ) {
 
-            return "Invalid email address.";
+    <div class="card">
 
-        }
+        <h2>
+            Students
+            (<span id="studentCount">0</span>)
+        </h2>
 
-        if (
-            error.code ===
-            "auth/invalid-credential"
-        ) {
+        <br>
 
-            return "Invalid email or password.";
 
-        }
+        <div class="table-wrapper">
 
-        if (
-            error.code ===
-            "auth/weak-password"
-        ) {
+            <table>
 
-            return "Password must contain at least 6 characters.";
+                <thead>
 
-        }
-
-        return error.message;
-
-    }
-
-
-    /* ===============================
-       AUTH STATE
-    ================================ */
-
-    onAuthStateChanged(
-        auth,
-        async (user) => {
-
-            if (user) {
-
-                authPage.style.display =
-                    "none";
-
-                appPage.style.display =
-                    "block";
-
-
-                document.getElementById(
-                    "topUser"
-                ).innerText =
-                    user.email;
-
-
-                document.getElementById(
-                    "avatar"
-                ).innerText =
-                    user.email
-                        .charAt(0)
-                        .toUpperCase();
-
-
-                document.getElementById(
-                    "profileEmail"
-                ).value =
-                    user.email;
-
-
-                document.getElementById(
-                    "profileUid"
-                ).value =
-                    user.uid;
-
-
-                await loadDashboard();
-
-            } else {
-
-                authPage.style.display =
-                    "flex";
-
-                appPage.style.display =
-                    "none";
-
-            }
-
-        }
-    );
-
-
-    /* ===============================
-       NAVIGATION
-    ================================ */
-
-    const navItems =
-        document.querySelectorAll(
-            ".nav-item"
-        );
-
-
-    navItems.forEach(item => {
-
-        item.addEventListener(
-            "click",
-            () => {
-
-                const page =
-                    item.dataset.page;
-
-                openPage(page);
-
-            }
-        );
-
-    });
-
-
-    window.openPage =
-        function(pageName) {
-
-            document
-                .querySelectorAll(".page")
-                .forEach(page => {
-
-                    page.classList.remove(
-                        "active"
-                    );
-
-                });
-
-
-            const selected =
-                document.getElementById(
-                    pageName
-                );
-
-
-            if (selected) {
-
-                selected.classList.add(
-                    "active"
-                );
-
-            }
-
-
-            navItems.forEach(item => {
-
-                item.classList.remove(
-                    "active"
-                );
-
-
-                if (
-                    item.dataset.page ===
-                    pageName
-                ) {
-
-                    item.classList.add(
-                        "active"
-                    );
-
-                }
-
-            });
-
-
-            const titles = {
-
-                dashboard:
-                    "Dashboard",
-
-                students:
-                    "Student Management",
-
-                face:
-                    "Face Registration",
-
-                attendance:
-                    "Attendance Management",
-
-                reports:
-                    "Attendance Reports",
-
-                profile:
-                    "My Profile",
-
-                settings:
-                    "Settings"
-
-            };
-
-
-            document.getElementById(
-                "pageTitle"
-            ).innerText =
-                titles[pageName] ||
-                "Dashboard";
-
-
-            if (pageName === "students") {
-
-                loadStudents();
-
-            }
-
-
-            if (pageName === "attendance") {
-
-                loadAttendance();
-
-            }
-
-
-            if (pageName === "reports") {
-
-                loadReports();
-
-            }
-
-        };
-
-
-    /* ===============================
-       SAVE STUDENT
-    ================================ */
-
-    document
-        .getElementById("saveStudentBtn")
-        .addEventListener(
-            "click",
-            async () => {
-
-                const name =
-                    document.getElementById(
-                        "studentName"
-                    ).value.trim();
-
-                const id =
-                    document.getElementById(
-                        "studentId"
-                    ).value.trim();
-
-                const course =
-                    document.getElementById(
-                        "studentCourse"
-                    ).value.trim();
-
-                const semester =
-                    document.getElementById(
-                        "studentSemester"
-                    ).value;
-
-
-                const message =
-                    document.getElementById(
-                        "studentMessage"
-                    );
-
-
-                if (!name || !id) {
-
-                    message.innerText =
-                        "Student name and ID are required.";
-
-                    return;
-
-                }
-
-
-                try {
-
-                    await addDoc(
-                        collection(
-                            db,
-                            "students"
-                        ),
-                        {
-
-                            name: name,
-
-                            studentId: id,
-
-                            course: course,
-
-                            semester: semester,
-
-                            email:
-                                auth.currentUser.email,
-
-                            userId:
-                                auth.currentUser.uid,
-
-                            faceRegistered:
-                                false,
-
-                            createdAt:
-                                serverTimestamp()
-
-                        }
-                    );
-
-
-                    message.innerText =
-                        "Student added successfully!";
-
-
-                    document.getElementById(
-                        "studentName"
-                    ).value = "";
-
-                    document.getElementById(
-                        "studentId"
-                    ).value = "";
-
-                    document.getElementById(
-                        "studentCourse"
-                    ).value = "";
-
-                    document.getElementById(
-                        "studentSemester"
-                    ).value = "";
-
-
-                    loadStudents();
-
-                    loadDashboard();
-
-
-                } catch (error) {
-
-                    console.error(error);
-
-                    message.innerText =
-                        "Unable to save student.";
-
-                }
-
-            }
-        );
-
-
-    /* ===============================
-       LOAD STUDENTS
-    ================================ */
-
-    window.loadStudents =
-        async function() {
-
-            const table =
-                document.getElementById(
-                    "studentTable"
-                );
-
-
-            table.innerHTML = "";
-
-
-            try {
-
-                const snapshot =
-                    await getDocs(
-                        collection(
-                            db,
-                            "students"
-                        )
-                    );
-
-
-                document.getElementById(
-                    "totalStudents"
-                ).innerText =
-                    snapshot.size;
-
-
-                if (snapshot.empty) {
-
-                    table.innerHTML = `
-                        <tr>
-                            <td colspan="5">
-                                No students found.
-                            </td>
-                        </tr>
-                    `;
-
-                    return;
-
-                }
-
-
-                snapshot.forEach(doc => {
-
-                    const data =
-                        doc.data();
-
-
-                    const row =
-                        document.createElement(
-                            "tr"
-                        );
-
-
-                    row.innerHTML = `
-
-                        <td>
-                            ${data.name || "-"}
-                        </td>
-
-                        <td>
-                            ${data.studentId || "-"}
-                        </td>
-
-                        <td>
-                            ${data.course || "-"}
-                        </td>
-
-                        <td>
-                            ${data.semester || "-"}
-                        </td>
-
-                        <td>
-                            ${data.email || "-"}
-                        </td>
-
-                    `;
-
-
-                    table.appendChild(row);
-
-                });
-
-
-            } catch (error) {
-
-                console.error(error);
-
-                table.innerHTML = `
                     <tr>
-                        <td colspan="5">
-                            Error loading students.
-                        </td>
+
+                        <th>Student ID</th>
+
+                        <th>Name</th>
+
+                        <th>Course</th>
+
+                        <th>Semester</th>
+
+                        <th>Email</th>
+
+                        <th>Face</th>
+
                     </tr>
-                `;
 
-            }
+                </thead>
 
-        };
 
+                <tbody
+                    id="studentTableBody"
+                ></tbody>
 
-    /* ===============================
-       CAMERA
-    ================================ */
+            </table>
 
-    let stream = null;
+        </div>
 
+    </div>
 
-    const camera =
-        document.getElementById(
-            "camera"
-        );
+</section>
 
 
-    document
-        .getElementById(
-            "startCameraBtn"
-        )
-        .addEventListener(
-            "click",
-            async () => {
 
-                try {
+<!-- =====================================================
+     FACE REGISTRATION
+===================================================== -->
 
-                    stream =
-                        await navigator
-                            .mediaDevices
-                            .getUserMedia({
+<section
+    class="page"
+    id="face"
+>
 
-                                video: true
+    <div class="page-header">
 
-                            });
+        <div>
 
+            <h1>Face Registration</h1>
 
-                    camera.srcObject =
-                        stream;
+            <p>
+                Register a student's face for automatic attendance.
+            </p>
 
+        </div>
 
-                    document.getElementById(
-                        "faceMessage"
-                    ).innerText =
-                        "Camera started successfully.";
+    </div>
 
-                } catch (error) {
 
-                    console.error(error);
+    <div class="card">
 
-                    document.getElementById(
-                        "faceMessage"
-                    ).innerText =
-                        "Camera permission denied.";
+        <div class="form-group">
 
-                }
+            <label>
+                Select Student
+            </label>
 
-            }
-        );
+            <select
+                id="faceStudentSelect"
+            >
 
+                <option value="">
+                    Select a student
+                </option>
 
-    /* ===============================
-       CAPTURE FACE
-    ================================ */
+            </select>
 
-    document
-        .getElementById("captureBtn")
-        .addEventListener(
-            "click",
-            () => {
+        </div>
 
-                const canvas =
-                    document.getElementById(
-                        "canvas"
-                    );
 
+        <div class="camera-container">
 
-                if (
-                    !camera.videoWidth
-                ) {
+            <video
+                id="faceVideo"
+                autoplay
+                muted
+                playsinline
+            ></video>
 
-                    document.getElementById(
-                        "faceMessage"
-                    ).innerText =
-                        "Start the camera first.";
+            <canvas
+                id="faceCanvas"
+            ></canvas>
 
-                    return;
+        </div>
 
-                }
 
+        <div class="camera-buttons">
 
-                canvas.width =
-                    camera.videoWidth;
+            <button
+                class="btn btn-primary"
+                id="startFaceCamera"
+            >
+                📷 Start Camera
+            </button>
 
-                canvas.height =
-                    camera.videoHeight;
 
+            <button
+                class="btn btn-success"
+                id="registerFace"
+                disabled
+            >
+                🤖 Register Face
+            </button>
 
-                const context =
-                    canvas.getContext(
-                        "2d"
-                    );
 
+            <button
+                class="btn btn-danger"
+                id="stopFaceCamera"
+            >
+                Stop Camera
+            </button>
 
-                context.drawImage(
-                    camera,
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
+        </div>
 
 
-                document.getElementById(
-                    "faceMessage"
-                ).innerText =
-                    "Face image captured successfully.";
+        <div
+            id="faceStatus"
+            class="status-message"
+        >
+            Select a student and start the camera.
+        </div>
 
-            }
-        );
+    </div>
 
+</section>
 
-    /* ===============================
-       STOP CAMERA
-    ================================ */
 
-    document
-        .getElementById(
-            "stopCameraBtn"
-        )
-        .addEventListener(
-            "click",
-            () => {
 
-                if (stream) {
+<!-- =====================================================
+     ATTENDANCE
+===================================================== -->
 
-                    stream
-                        .getTracks()
-                        .forEach(
-                            track =>
-                                track.stop()
-                        );
+<section
+    class="page"
+    id="attendance"
+>
 
+    <div class="page-header">
 
-                    stream = null;
+        <div>
 
-                    camera.srcObject =
-                        null;
+            <h1>Attendance Management</h1>
 
-                }
+            <p>
+                Mark attendance using face recognition or manually.
+            </p>
 
+        </div>
 
-                document.getElementById(
-                    "faceMessage"
-                ).innerText =
-                    "Camera stopped.";
+    </div>
 
-            }
-        );
 
+    <!-- FACE RECOGNITION -->
 
-    /* ===============================
-       MARK ATTENDANCE
-    ================================ */
+    <div class="card">
 
-    document
-        .getElementById("attendanceBtn")
-        .addEventListener(
-            "click",
-            async () => {
+        <h2>Automatic Face Attendance</h2>
 
-                const name =
-                    document.getElementById(
-                        "attendanceName"
-                    ).value.trim();
+        <br>
 
+        <div class="camera-container">
 
-                const id =
-                    document.getElementById(
-                        "attendanceId"
-                    ).value.trim();
+            <video
+                id="recognitionVideo"
+                autoplay
+                muted
+                playsinline
+            ></video>
 
+            <canvas
+                id="recognitionCanvas"
+            ></canvas>
 
-                const message =
-                    document.getElementById(
-                        "attendanceMessage"
-                    );
+        </div>
 
 
-                if (!name || !id) {
+        <div class="camera-buttons">
 
-                    message.innerText =
-                        "Enter student name and ID.";
+            <button
+                class="btn btn-success"
+                id="startRecognition"
+            >
+                🤖 Start Face Recognition
+            </button>
 
-                    return;
 
-                }
+            <button
+                class="btn btn-danger"
+                id="stopRecognition"
+            >
+                Stop Recognition
+            </button>
 
+        </div>
 
-                try {
 
-                    const now =
-                        new Date();
+        <div
+            id="recognitionStatus"
+            class="status-message"
+        >
+            Click Start Face Recognition.
+        </div>
 
+    </div>
 
-                    await addDoc(
-                        collection(
-                            db,
-                            "attendance"
-                        ),
-                        {
 
-                            name: name,
+    <!-- MANUAL -->
 
-                            studentId: id,
+    <div class="card">
 
-                            date:
-                                now.toLocaleDateString(),
+        <h2>Manual Attendance</h2>
 
-                            time:
-                                now.toLocaleTimeString(),
+        <br>
 
-                            status:
-                                "Present",
 
-                            userId:
-                                auth.currentUser.uid,
+        <form
+            id="manualAttendanceForm"
+        >
 
-                            email:
-                                auth.currentUser.email,
+            <div class="two-column">
 
-                            createdAt:
-                                serverTimestamp()
+                <div class="form-group">
 
-                        }
-                    );
+                    <label>
+                        Select Student
+                    </label>
 
+                    <select
+                        id="manualStudent"
+                        required
+                    >
 
-                    message.innerText =
-                        "Attendance marked successfully!";
+                        <option value="">
+                            Select student
+                        </option>
 
+                    </select>
 
-                    document.getElementById(
-                        "attendanceName"
-                    ).value = "";
+                </div>
 
-                    document.getElementById(
-                        "attendanceId"
-                    ).value = "";
+            </div>
 
 
-                    loadAttendance();
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Mark Present
+            </button>
 
-                    loadDashboard();
+        </form>
 
+    </div>
 
-                } catch (error) {
 
-                    console.error(error);
+    <!-- ATTENDANCE TABLE -->
 
-                    message.innerText =
-                        "Error marking attendance.";
+    <div class="card">
 
-                }
+        <h2>
+            Attendance Records
+            (<span id="attendanceCount">0</span>)
+        </h2>
 
-            }
-        );
+        <br>
 
 
-    /* ===============================
-       LOAD ATTENDANCE
-    ================================ */
+        <div class="table-wrapper">
 
-    window.loadAttendance =
-        async function() {
+            <table>
 
-            const table =
-                document.getElementById(
-                    "attendanceTable"
-                );
+                <thead>
 
+                    <tr>
 
-            const recent =
-                document.getElementById(
-                    "recentAttendance"
-                );
+                        <th>Student ID</th>
 
+                        <th>Name</th>
 
-            if (table) {
+                        <th>Date</th>
 
-                table.innerHTML = "";
+                        <th>Time</th>
 
-            }
+                        <th>Status</th>
 
+                        <th>Method</th>
 
-            if (recent) {
+                    </tr>
 
-                recent.innerHTML = "";
+                </thead>
 
-            }
 
+                <tbody
+                    id="attendanceTableBody"
+                ></tbody>
 
-            try {
+            </table>
 
-                const q =
-                    query(
-                        collection(
-                            db,
-                            "attendance"
-                        ),
-                        orderBy(
-                            "createdAt",
-                            "desc"
-                        )
-                    );
+        </div>
 
+    </div>
 
-                const snapshot =
-                    await getDocs(q);
+</section>
 
 
-                if (snapshot.empty) {
 
-                    const emptyRow = `
-                        <tr>
-                            <td colspan="5">
-                                No attendance records found.
-                            </td>
-                        </tr>
-                    `;
+<!-- =====================================================
+     REPORTS
+===================================================== -->
 
+<section
+    class="page"
+    id="reports"
+>
 
-                    if (table) {
+    <div class="page-header">
 
-                        table.innerHTML =
-                            emptyRow;
+        <div>
 
-                    }
+            <h1>Reports</h1>
 
+            <p>
+                Attendance and face registration statistics.
+            </p>
 
-                    if (recent) {
+        </div>
 
-                        recent.innerHTML =
-                            emptyRow;
+    </div>
 
-                    }
 
-                    return;
+    <div class="stats-grid">
 
-                }
 
+        <div class="stat-card">
 
-                let count = 0;
+            <div class="stat-icon">
+                👨‍🎓
+            </div>
 
+            <h3 id="reportStudents">
+                0
+            </h3>
 
-                snapshot.forEach(doc => {
+            <p>Total Students</p>
 
-                    const data =
-                        doc.data();
+        </div>
 
 
-                    const row = `
+        <div class="stat-card">
 
-                        <tr>
+            <div class="stat-icon">
+                📝
+            </div>
 
-                            <td>
-                                ${data.name || "-"}
-                            </td>
+            <h3 id="reportAttendance">
+                0
+            </h3>
 
-                            <td>
-                                ${data.studentId || "-"}
-                            </td>
+            <p>Attendance Records</p>
 
-                            <td>
-                                ${data.date || "-"}
-                            </td>
+        </div>
 
-                            <td>
-                                ${data.time || "-"}
-                            </td>
 
-                            <td>
-                                <span class="badge present">
-                                    ${data.status || "Present"}
-                                </span>
-                            </td>
+        <div class="stat-card">
 
-                        </tr>
+            <div class="stat-icon">
+                🤖
+            </div>
 
-                    `;
+            <h3 id="reportFaces">
+                0
+            </h3>
 
+            <p>Registered Faces</p>
 
-                    if (table) {
+        </div>
 
-                        table.innerHTML += row;
 
-                    }
+        <div class="stat-card">
 
+            <div class="stat-icon">
+                📊
+            </div>
 
-                    if (
-                        recent &&
-                        count < 5
-                    ) {
+            <h3 id="attendancePercentage">
+                0%
+            </h3>
 
-                        recent.innerHTML += row;
+            <p>Attendance Ratio</p>
 
-                    }
+        </div>
 
 
-                    count++;
+    </div>
 
-                });
+</section>
 
 
-            } catch (error) {
 
-                console.error(error);
+<!-- =====================================================
+     PROFILE
+===================================================== -->
 
-                if (table) {
+<section
+    class="page"
+    id="profile"
+>
 
-                    table.innerHTML = `
-                        <tr>
-                            <td colspan="5">
-                                Unable to load attendance.
-                            </td>
-                        </tr>
-                    `;
+    <div class="page-header">
 
-                }
+        <div>
 
-            }
+            <h1>Profile</h1>
 
-        };
+            <p>
+                Manage your administrator profile.
+            </p>
 
+        </div>
 
-    /* ===============================
-       DASHBOARD
-    ================================ */
+    </div>
 
-    async function loadDashboard() {
 
-        await loadStudents();
+    <div class="card profile-box">
 
-        await loadAttendance();
+        <form id="profileForm">
 
-        await loadReports();
+            <div class="form-group">
 
-    }
+                <label>
+                    Full Name
+                </label>
 
+                <input
+                    type="text"
+                    id="profileFullName"
+                    placeholder="Enter your name"
+                >
 
-    /* ===============================
-       REPORTS
-    ================================ */
+            </div>
 
-    window.loadReports =
-        async function() {
 
-            try {
+            <div class="form-group">
 
-                const students =
-                    await getDocs(
-                        collection(
-                            db,
-                            "students"
-                        )
-                    );
+                <label>
+                    Email
+                </label>
 
+                <input
+                    type="email"
+                    id="profileEmail"
+                    readonly
+                >
 
-                const attendance =
-                    await getDocs(
-                        collection(
-                            db,
-                            "attendance"
-                        )
-                    );
+            </div>
 
 
-                const totalStudents =
-                    students.size;
+            <button
+                class="btn btn-primary"
+                type="submit"
+            >
+                Update Profile
+            </button>
 
+        </form>
 
-                const totalAttendance =
-                    attendance.size;
+    </div>
 
+</section>
 
-                const rate =
-                    totalStudents > 0
-                        ? Math.min(
-                            100,
-                            Math.round(
-                                (
-                                    totalAttendance /
-                                    totalStudents
-                                ) * 100
-                            )
-                        )
-                        : 0;
 
 
-                document.getElementById(
-                    "reportStudents"
-                ).innerText =
-                    totalStudents;
+<!-- =====================================================
+     SETTINGS
+===================================================== -->
 
+<section
+    class="page"
+    id="settings"
+>
 
-                document.getElementById(
-                    "reportPresent"
-                ).innerText =
-                    totalAttendance;
+    <div class="page-header">
 
+        <div>
 
-                document.getElementById(
-                    "reportRate"
-                ).innerText =
-                    rate + "%";
+            <h1>Settings</h1>
 
+            <p>
+                System configuration.
+            </p>
 
-            } catch (error) {
+        </div>
 
-                console.error(error);
+    </div>
 
-            }
 
-        };
+    <div class="card">
 
+        <h2>System Information</h2>
 
-    /* ===============================
-       SAVE SETTINGS
-    ================================ */
+        <br>
 
-    window.saveSettings =
-        function() {
+        <p>
+            <strong>Application:</strong>
+            SmartFace Attendance System
+        </p>
 
-            document.getElementById(
-                "settingsMessage"
-            ).innerText =
-                "Settings saved successfully.";
+        <br>
 
-        };
+        <p>
+            <strong>Database:</strong>
+            Firebase Firestore
+        </p>
 
+        <br>
 
-    /* ===============================
-       LOGOUT
-    ================================ */
+        <p>
+            <strong>Authentication:</strong>
+            Firebase Authentication
+        </p>
 
-    document
-        .getElementById("logoutBtn")
-        .addEventListener(
-            "click",
-            async () => {
+        <br>
 
-                if (stream) {
+        <p>
+            <strong>Face Recognition:</strong>
+            face-api.js
+        </p>
 
-                    stream
-                        .getTracks()
-                        .forEach(
-                            track =>
-                                track.stop()
-                        );
+        <br>
 
-                    stream = null;
+        <p>
+            <strong>Hosting:</strong>
+            GitHub Pages
+        </p>
 
-                }
+    </div>
 
+</section>
 
-                await signOut(auth);
 
-            }
-        );
+</main>
 
-</script>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </body>
-
 </html>
-
+```
