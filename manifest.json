@@ -1,0 +1,24 @@
+{
+  "name": "Nagarjuna Degree College - AI Attendance System",
+  "short_name": "NDC Attendance",
+  "description": "AI Face Recognition Attendance System for Nagarjuna Degree College",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0b5ed7",
+  "lang": "en-IN",
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "./assets/ndc-logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
