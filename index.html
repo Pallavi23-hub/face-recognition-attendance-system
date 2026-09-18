@@ -1,6 +1,7 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +43,7 @@
             padding: 25px;
             margin-bottom: 25px;
             border-radius: 12px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
         h2 {
@@ -55,6 +56,7 @@
             margin: 8px 0 15px;
             border: 1px solid #ccc;
             border-radius: 6px;
+            font-size: 15px;
         }
 
         button {
@@ -80,6 +82,10 @@
             background: #16a34a;
         }
 
+        .secondary {
+            background: #6b7280;
+        }
+
         #camera {
             width: 100%;
             max-width: 500px;
@@ -89,10 +95,60 @@
             background: black;
         }
 
-        #message {
+        #message,
+        #authMessage,
+        #studentMessage,
+        #faceMessage,
+        #attendanceMessage {
             margin-top: 15px;
             padding: 10px;
             font-weight: bold;
+        }
+
+        .auth-box {
+            max-width: 450px;
+            margin: 50px auto;
+        }
+
+        .auth-box h2 {
+            text-align: center;
+        }
+
+        .auth-subtitle {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .auth-buttons button {
+            flex: 1;
+            margin: 0;
+        }
+
+        .switch-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #555;
+        }
+
+        .switch-text button {
+            background: none;
+            color: #2563eb;
+            padding: 0;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .user-info {
+            background: #e5e7eb;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
         table {
@@ -101,7 +157,8 @@
             margin-top: 15px;
         }
 
-        th, td {
+        th,
+        td {
             padding: 12px;
             border: 1px solid #ddd;
             text-align: center;
@@ -116,7 +173,7 @@
             display: none;
         }
 
-        @media(max-width:600px) {
+        @media (max-width: 600px) {
             .container {
                 width: 95%;
             }
@@ -125,692 +182,1268 @@
                 width: 100%;
                 margin: 5px 0;
             }
+
+            .auth-buttons {
+                display: block;
+            }
+
+            .auth-buttons button {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th,
+            td {
+                padding: 8px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-<header>
-    <h1>Face Recognition Attendance System</h1>
-    <p>Smart Attendance Management</p>
-</header>
+    <!-- HEADER -->
+    <header>
+        <h1>Face Recognition Attendance System</h1>
+        <p>Smart Attendance Management</p>
+    </header>
 
-<div class="container">
 
-    <!-- LOGIN / REGISTER -->
-    <div class="card" id="authSection">
+    <div class="container">
 
-        <h2>Login / Register</h2>
+        <!-- ==============================
+             LOGIN / REGISTER SECTION
+        =============================== -->
 
-        <input
-            type="email"
-            id="email"
-            placeholder="Enter Email"
-        >
+        <div class="card auth-box" id="authSection">
 
-        <input
-            type="password"
-            id="password"
-            placeholder="Enter Password"
-        >
+            <!-- LOGIN -->
+            <div id="loginForm">
 
-        <button id="registerBtn">
-            Register
-        </button>
+                <h2>Login</h2>
 
-        <button id="loginBtn">
-            Login
-        </button>
+                <p class="auth-subtitle">
+                    Login to access the attendance system
+                </p>
 
-        <p id="authMessage"></p>
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="Enter Email"
+                >
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Enter Password"
+                >
+
+                <div class="auth-buttons">
+
+                    <button id="loginBtn">
+                        Login
+                    </button>
+
+                </div>
+
+                <p id="loginMessage"></p>
+
+                <p class="switch-text">
+                    Don't have an account?
+
+                    <button id="showRegisterBtn">
+                        Register
+                    </button>
+                </p>
+
+            </div>
+
+
+            <!-- REGISTER -->
+            <div id="registerForm" class="hidden">
+
+                <h2>Create Account</h2>
+
+                <p class="auth-subtitle">
+                    Register for the attendance system
+                </p>
+
+                <input
+                    type="email"
+                    id="registerEmail"
+                    placeholder="Enter Email"
+                >
+
+                <input
+                    type="password"
+                    id="registerPassword"
+                    placeholder="Enter Password"
+                >
+
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    placeholder="Confirm Password"
+                >
+
+                <div class="auth-buttons">
+
+                    <button id="registerBtn">
+                        Register
+                    </button>
+
+                </div>
+
+                <p id="registerMessage"></p>
+
+                <p class="switch-text">
+                    Already have an account?
+
+                    <button id="showLoginBtn">
+                        Login
+                    </button>
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==============================
+             DASHBOARD
+        =============================== -->
+
+        <div id="dashboardArea" class="hidden">
+
+            <!-- USER INFORMATION -->
+
+            <div class="card">
+
+                <h2>Welcome to Dashboard</h2>
+
+                <div class="user-info">
+
+                    Logged in as:
+
+                    <strong id="loggedUser">
+                        -
+                    </strong>
+
+                </div>
+
+                <button
+                    class="danger"
+                    id="logoutBtn">
+                    Logout
+                </button>
+
+            </div>
+
+
+            <!-- STUDENT DETAILS -->
+
+            <div class="card">
+
+                <h2>Student Details</h2>
+
+                <input
+                    type="text"
+                    id="studentName"
+                    placeholder="Student Name"
+                >
+
+                <input
+                    type="text"
+                    id="studentId"
+                    placeholder="Student ID"
+                >
+
+                <button
+                    class="success"
+                    id="saveStudentBtn">
+                    Save Student
+                </button>
+
+                <p id="studentMessage"></p>
+
+            </div>
+
+
+            <!-- FACE CAMERA -->
+
+            <div class="card">
+
+                <h2>Face Recognition</h2>
+
+                <p>
+                    Allow camera access and capture your face.
+                </p>
+
+                <video
+                    id="camera"
+                    autoplay
+                    playsinline>
+                </video>
+
+                <button id="startCameraBtn">
+                    Start Camera
+                </button>
+
+                <button
+                    class="secondary"
+                    id="captureBtn">
+                    Capture Face
+                </button>
+
+                <canvas
+                    id="canvas"
+                    class="hidden">
+                </canvas>
+
+                <p id="faceMessage"></p>
+
+            </div>
+
+
+            <!-- ATTENDANCE -->
+
+            <div class="card">
+
+                <h2>Mark Attendance</h2>
+
+                <p>
+                    Student:
+                    <strong id="displayStudentName">
+                        -
+                    </strong>
+                </p>
+
+                <p>
+                    Student ID:
+                    <strong id="displayStudentId">
+                        -
+                    </strong>
+                </p>
+
+                <button
+                    class="success"
+                    id="attendanceBtn">
+                    Mark Attendance
+                </button>
+
+                <p id="attendanceMessage"></p>
+
+            </div>
+
+
+            <!-- ATTENDANCE DASHBOARD -->
+
+            <div class="card">
+
+                <h2>Attendance Dashboard</h2>
+
+                <button id="loadAttendanceBtn">
+                    Load Attendance
+                </button>
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Name</th>
+
+                            <th>Student ID</th>
+
+                            <th>Date</th>
+
+                            <th>Time</th>
+
+                            <th>Status</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="attendanceTable">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
 
     </div>
 
 
-    <!-- STUDENT DETAILS -->
-    <div class="card hidden" id="studentSection">
+    <!-- ==============================
+         FIREBASE SCRIPT
+    =============================== -->
 
-        <h2>Student Details</h2>
+    <script type="module">
 
-        <input
-            type="text"
-            id="studentName"
-            placeholder="Student Name"
-        >
+        /* ==============================
+           FIREBASE IMPORTS
+        ============================== */
 
-        <input
-            type="text"
-            id="studentId"
-            placeholder="Student ID"
-        >
+        import {
+            initializeApp
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-        <button class="success" id="saveStudentBtn">
-            Save Student
-        </button>
 
-        <p id="studentMessage"></p>
+        import {
+            getAuth,
+            setPersistence,
+            browserSessionPersistence,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    </div>
 
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            getDocs,
+            query,
+            orderBy,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <!-- FACE CAMERA -->
-    <div class="card hidden" id="faceSection">
 
-        <h2>Face Recognition</h2>
+        /* ==============================
+           FIREBASE CONFIG
+        =============================== */
 
-        <p>
-            Allow camera access and capture your face.
-        </p>
+        const firebaseConfig = {
 
-        <video
-            id="camera"
-            autoplay
-            playsinline>
-        </video>
+            apiKey:
+                "AIzaSyC8KMuO0yg9gN4MD3Y3CV8YNWsKCvV8L-Y",
 
-        <button id="startCameraBtn">
-            Start Camera
-        </button>
+            authDomain:
+                "face-recognition-attenda-328c0.firebaseapp.com",
 
-        <button id="captureBtn">
-            Capture Face
-        </button>
+            projectId:
+                "face-recognition-attenda-328c0",
 
-        <canvas id="canvas" class="hidden"></canvas>
+            storageBucket:
+                "face-recognition-attenda-328c0.firebasestorage.app",
 
-        <p id="faceMessage"></p>
+            messagingSenderId:
+                "289877248453",
 
-    </div>
+            appId:
+                "1:289877248453:web:30db49d06316a402e123ac"
+        };
 
 
-    <!-- ATTENDANCE -->
-    <div class="card hidden" id="attendanceSection">
+        /* ==============================
+           INITIALIZE FIREBASE
+        =============================== */
 
-        <h2>Mark Attendance</h2>
+        const app =
+            initializeApp(firebaseConfig);
 
-        <p>
-            Student:
-            <strong id="displayStudentName">-</strong>
-        </p>
+        const auth =
+            getAuth(app);
 
-        <p>
-            Student ID:
-            <strong id="displayStudentId">-</strong>
-        </p>
+        const db =
+            getFirestore(app);
 
-        <button class="success" id="attendanceBtn">
-            Mark Attendance
-        </button>
 
-        <p id="attendanceMessage"></p>
+        /* ==============================
+           SESSION LOGIN
+        =============================== */
 
-    </div>
+        setPersistence(
+            auth,
+            browserSessionPersistence
+        ).catch((error) => {
 
-
-    <!-- ATTENDANCE TABLE -->
-    <div class="card hidden" id="dashboardSection">
-
-        <h2>Attendance Dashboard</h2>
-
-        <button id="loadAttendanceBtn">
-            Load Attendance
-        </button>
-
-        <table>
-
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Student ID</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-
-            <tbody id="attendanceTable">
-            </tbody>
-
-        </table>
-
-        <br>
-
-        <button class="danger" id="logoutBtn">
-            Logout
-        </button>
-
-    </div>
-
-</div>
-
-
-<script type="module">
-
-    /* ==============================
-       FIREBASE IMPORTS
-    ============================== */
-
-    import {
-        initializeApp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-    import {
-        getAuth,
-        createUserWithEmailAndPassword,
-        signInWithEmailAndPassword,
-        signOut,
-        onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    import {
-        getFirestore,
-        collection,
-        addDoc,
-        getDocs,
-        query,
-        orderBy,
-        serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-
-    /* ==============================
-       FIREBASE CONFIG
-    ============================== */
-
-    const firebaseConfig = {
-
-        apiKey: "AIzaSyC8KMuO0yg9gN4MD3Y3CV8YNWsKCvV8L-Y",
-
-        authDomain:
-        "face-recognition-attenda-328c0.firebaseapp.com",
-
-        projectId:
-        "face-recognition-attenda-328c0",
-
-        storageBucket:
-        "face-recognition-attenda-328c0.firebasestorage.app",
-
-        messagingSenderId:
-        "289877248453",
-
-        appId:
-        "1:289877248453:web:30db49d06316a402e123ac"
-    };
-
-
-    /* ==============================
-       INITIALIZE FIREBASE
-    ============================== */
-
-    const app = initializeApp(firebaseConfig);
-
-    const auth = getAuth(app);
-
-    const db = getFirestore(app);
-
-
-    console.log("Firebase connected successfully!");
-
-
-    /* ==============================
-       HTML ELEMENTS
-    ============================== */
-
-    const email =
-        document.getElementById("email");
-
-    const password =
-        document.getElementById("password");
-
-    const registerBtn =
-        document.getElementById("registerBtn");
-
-    const loginBtn =
-        document.getElementById("loginBtn");
-
-    const logoutBtn =
-        document.getElementById("logoutBtn");
-
-
-    const authSection =
-        document.getElementById("authSection");
-
-    const studentSection =
-        document.getElementById("studentSection");
-
-    const faceSection =
-        document.getElementById("faceSection");
-
-    const attendanceSection =
-        document.getElementById("attendanceSection");
-
-    const dashboardSection =
-        document.getElementById("dashboardSection");
-
-
-    /* ==============================
-       REGISTER
-    ============================== */
-
-    registerBtn.addEventListener("click", async () => {
-
-        try {
-
-            const userCredential =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email.value,
-                    password.value
-                );
-
-            document.getElementById(
-                "authMessage"
-            ).innerText =
-                "Registration successful!";
-
-            console.log(
-                "User:",
-                userCredential.user
+            console.error(
+                "Persistence error:",
+                error
             );
 
-        } catch (error) {
+        });
 
+
+        console.log(
+            "Firebase connected successfully!"
+        );
+
+
+        /* ==============================
+           HTML ELEMENTS
+        =============================== */
+
+        const authSection =
             document.getElementById(
-                "authMessage"
-            ).innerText =
-                error.message;
-
-        }
-
-    });
-
-
-    /* ==============================
-       LOGIN
-    ============================== */
-
-    loginBtn.addEventListener("click", async () => {
-
-        try {
-
-            await signInWithEmailAndPassword(
-                auth,
-                email.value,
-                password.value
+                "authSection"
             );
 
+        const loginForm =
             document.getElementById(
-                "authMessage"
-            ).innerText =
-                "Login successful!";
+                "loginForm"
+            );
 
-        } catch (error) {
-
+        const registerForm =
             document.getElementById(
-                "authMessage"
-            ).innerText =
-                error.message;
+                "registerForm"
+            );
 
-        }
-
-    });
-
-
-    /* ==============================
-       AUTH STATE
-    ============================== */
-
-    onAuthStateChanged(auth, (user) => {
-
-        if (user) {
-
-            authSection.classList.add("hidden");
-
-            studentSection.classList.remove("hidden");
-
-            faceSection.classList.remove("hidden");
-
-            attendanceSection.classList.remove("hidden");
-
-            dashboardSection.classList.remove("hidden");
-
-        } else {
-
-            authSection.classList.remove("hidden");
-
-            studentSection.classList.add("hidden");
-
-            faceSection.classList.add("hidden");
-
-            attendanceSection.classList.add("hidden");
-
-            dashboardSection.classList.add("hidden");
-
-        }
-
-    });
+        const dashboardArea =
+            document.getElementById(
+                "dashboardArea"
+            );
 
 
-    /* ==============================
-       SAVE STUDENT
-    ============================== */
+        const loginEmail =
+            document.getElementById(
+                "loginEmail"
+            );
 
-    document
-        .getElementById("saveStudentBtn")
-        .addEventListener("click", async () => {
+        const loginPassword =
+            document.getElementById(
+                "loginPassword"
+            );
 
-            const name =
-                document.getElementById(
-                    "studentName"
-                ).value;
 
-            const id =
-                document.getElementById(
-                    "studentId"
-                ).value;
+        const registerEmail =
+            document.getElementById(
+                "registerEmail"
+            );
 
-            if (!name || !id) {
+        const registerPassword =
+            document.getElementById(
+                "registerPassword"
+            );
 
-                document.getElementById(
-                    "studentMessage"
-                ).innerText =
-                    "Please enter student name and ID.";
+        const confirmPassword =
+            document.getElementById(
+                "confirmPassword"
+            );
 
-                return;
+
+        const loginBtn =
+            document.getElementById(
+                "loginBtn"
+            );
+
+        const registerBtn =
+            document.getElementById(
+                "registerBtn"
+            );
+
+        const logoutBtn =
+            document.getElementById(
+                "logoutBtn"
+            );
+
+
+        /* ==============================
+           SHOW LOGIN
+        =============================== */
+
+        document
+            .getElementById("showLoginBtn")
+            .addEventListener(
+                "click",
+                () => {
+
+                    registerForm
+                        .classList
+                        .add("hidden");
+
+                    loginForm
+                        .classList
+                        .remove("hidden");
+
+                    document.getElementById(
+                        "registerMessage"
+                    ).innerText = "";
+
+                }
+            );
+
+
+        /* ==============================
+           SHOW REGISTER
+        =============================== */
+
+        document
+            .getElementById("showRegisterBtn")
+            .addEventListener(
+                "click",
+                () => {
+
+                    loginForm
+                        .classList
+                        .add("hidden");
+
+                    registerForm
+                        .classList
+                        .remove("hidden");
+
+                    document.getElementById(
+                        "loginMessage"
+                    ).innerText = "";
+
+                }
+            );
+
+
+        /* ==============================
+           REGISTER
+        =============================== */
+
+        registerBtn.addEventListener(
+            "click",
+            async () => {
+
+                const email =
+                    registerEmail.value.trim();
+
+                const password =
+                    registerPassword.value;
+
+                const confirm =
+                    confirmPassword.value;
+
+
+                const message =
+                    document.getElementById(
+                        "registerMessage"
+                    );
+
+
+                if (!email || !password || !confirm) {
+
+                    message.innerText =
+                        "Please fill all fields.";
+
+                    return;
+                }
+
+
+                if (password !== confirm) {
+
+                    message.innerText =
+                        "Passwords do not match.";
+
+                    return;
+                }
+
+
+                if (password.length < 6) {
+
+                    message.innerText =
+                        "Password must be at least 6 characters.";
+
+                    return;
+                }
+
+
+                try {
+
+                    await createUserWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+
+                    message.innerText =
+                        "Registration successful!";
+
+
+                    alert(
+                        "Registration successful! You are now logged in."
+                    );
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    message.innerText =
+                        getFirebaseErrorMessage(
+                            error
+                        );
+
+                }
+
+            }
+        );
+
+
+        /* ==============================
+           LOGIN
+        =============================== */
+
+        loginBtn.addEventListener(
+            "click",
+            async () => {
+
+                const email =
+                    loginEmail.value.trim();
+
+                const password =
+                    loginPassword.value;
+
+
+                const message =
+                    document.getElementById(
+                        "loginMessage"
+                    );
+
+
+                if (!email || !password) {
+
+                    message.innerText =
+                        "Please enter email and password.";
+
+                    return;
+                }
+
+
+                try {
+
+                    await signInWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+
+                    message.innerText =
+                        "Login successful!";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    message.innerText =
+                        getFirebaseErrorMessage(
+                            error
+                        );
+
+                }
+
+            }
+        );
+
+
+        /* ==============================
+           FIREBASE ERROR MESSAGE
+        =============================== */
+
+        function getFirebaseErrorMessage(error) {
+
+            if (
+                error.code ===
+                "auth/invalid-credential"
+            ) {
+
+                return "Invalid email or password.";
+
             }
 
-            try {
 
-                await addDoc(
-                    collection(db, "students"),
-                    {
+            if (
+                error.code ===
+                "auth/user-not-found"
+            ) {
 
-                        name: name,
+                return "No account found with this email.";
 
-                        studentId: id,
+            }
 
-                        email: auth.currentUser.email,
 
-                        createdAt: serverTimestamp()
+            if (
+                error.code ===
+                "auth/email-already-in-use"
+            ) {
+
+                return "This email is already registered.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/weak-password"
+            ) {
+
+                return "Password must be at least 6 characters.";
+
+            }
+
+
+            if (
+                error.code ===
+                "auth/invalid-email"
+            ) {
+
+                return "Please enter a valid email address.";
+
+            }
+
+
+            return error.message;
+
+        }
+
+
+        /* ==============================
+           AUTH STATE
+        =============================== */
+
+        onAuthStateChanged(
+            auth,
+            (user) => {
+
+                if (user) {
+
+                    /* SHOW DASHBOARD */
+
+                    authSection
+                        .classList
+                        .add("hidden");
+
+                    dashboardArea
+                        .classList
+                        .remove("hidden");
+
+
+                    document.getElementById(
+                        "loggedUser"
+                    ).innerText =
+                        user.email;
+
+
+                } else {
+
+                    /* SHOW LOGIN PAGE */
+
+                    authSection
+                        .classList
+                        .remove("hidden");
+
+                    dashboardArea
+                        .classList
+                        .add("hidden");
+
+
+                    document.getElementById(
+                        "loggedUser"
+                    ).innerText = "-";
+
+                }
+
+            }
+        );
+
+
+        /* ==============================
+           SAVE STUDENT
+        =============================== */
+
+        document
+            .getElementById("saveStudentBtn")
+            .addEventListener(
+                "click",
+                async () => {
+
+                    const name =
+                        document.getElementById(
+                            "studentName"
+                        ).value.trim();
+
+
+                    const id =
+                        document.getElementById(
+                            "studentId"
+                        ).value.trim();
+
+
+                    const message =
+                        document.getElementById(
+                            "studentMessage"
+                        );
+
+
+                    if (!name || !id) {
+
+                        message.innerText =
+                            "Please enter student name and ID.";
+
+                        return;
+                    }
+
+
+                    try {
+
+                        await addDoc(
+                            collection(
+                                db,
+                                "students"
+                            ),
+                            {
+
+                                name: name,
+
+                                studentId: id,
+
+                                email:
+                                    auth.currentUser.email,
+
+                                userId:
+                                    auth.currentUser.uid,
+
+                                createdAt:
+                                    serverTimestamp()
+
+                            }
+                        );
+
+
+                        message.innerText =
+                            "Student saved to Firebase!";
+
+
+                        document.getElementById(
+                            "displayStudentName"
+                        ).innerText = name;
+
+
+                        document.getElementById(
+                            "displayStudentId"
+                        ).innerText = id;
+
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        message.innerText =
+                            "Error saving student.";
 
                     }
-                );
 
-                document.getElementById(
-                    "studentMessage"
-                ).innerText =
-                    "Student saved to Firebase!";
-
-                document.getElementById(
-                    "displayStudentName"
-                ).innerText = name;
-
-                document.getElementById(
-                    "displayStudentId"
-                ).innerText = id;
-
-            } catch (error) {
-
-                console.error(error);
-
-                document.getElementById(
-                    "studentMessage"
-                ).innerText =
-                    "Error saving student.";
-
-            }
-
-        });
-
-
-    /* ==============================
-       CAMERA
-    ============================== */
-
-    const camera =
-        document.getElementById("camera");
-
-    let stream = null;
-
-
-    document
-        .getElementById("startCameraBtn")
-        .addEventListener("click", async () => {
-
-            try {
-
-                stream =
-                    await navigator.mediaDevices
-                    .getUserMedia({
-                        video: true
-                    });
-
-                camera.srcObject = stream;
-
-                document.getElementById(
-                    "faceMessage"
-                ).innerText =
-                    "Camera started.";
-
-            } catch (error) {
-
-                console.error(error);
-
-                document.getElementById(
-                    "faceMessage"
-                ).innerText =
-                    "Camera permission denied.";
-
-            }
-
-        });
-
-
-    /* ==============================
-       CAPTURE FACE
-    ============================== */
-
-    document
-        .getElementById("captureBtn")
-        .addEventListener("click", () => {
-
-            const canvas =
-                document.getElementById("canvas");
-
-            canvas.width = camera.videoWidth;
-
-            canvas.height = camera.videoHeight;
-
-            const context =
-                canvas.getContext("2d");
-
-            context.drawImage(
-                camera,
-                0,
-                0,
-                canvas.width,
-                canvas.height
+                }
             );
 
+
+        /* ==============================
+           CAMERA
+        =============================== */
+
+        const camera =
             document.getElementById(
-                "faceMessage"
-            ).innerText =
-                "Face captured successfully.";
-
-        });
+                "camera"
+            );
 
 
-    /* ==============================
-       MARK ATTENDANCE
-    ============================== */
-
-    document
-        .getElementById("attendanceBtn")
-        .addEventListener("click", async () => {
-
-            const name =
-                document.getElementById(
-                    "studentName"
-                ).value;
-
-            const studentId =
-                document.getElementById(
-                    "studentId"
-                ).value;
+        let stream = null;
 
 
-            if (!name || !studentId) {
+        document
+            .getElementById("startCameraBtn")
+            .addEventListener(
+                "click",
+                async () => {
 
-                document.getElementById(
-                    "attendanceMessage"
-                ).innerText =
-                    "Enter student details first.";
+                    try {
 
-                return;
-            }
+                        stream =
+                            await navigator
+                                .mediaDevices
+                                .getUserMedia({
+
+                                    video: true
+
+                                });
 
 
-            try {
+                        camera.srcObject =
+                            stream;
 
-                const now = new Date();
 
-                await addDoc(
-                    collection(db, "attendance"),
-                    {
+                        document.getElementById(
+                            "faceMessage"
+                        ).innerText =
+                            "Camera started successfully.";
 
-                        name: name,
+                    } catch (error) {
 
-                        studentId: studentId,
+                        console.error(error);
 
-                        date:
-                            now.toLocaleDateString(),
-
-                        time:
-                            now.toLocaleTimeString(),
-
-                        status: "Present",
-
-                        userId:
-                            auth.currentUser.uid,
-
-                        createdAt:
-                            serverTimestamp()
+                        document.getElementById(
+                            "faceMessage"
+                        ).innerText =
+                            "Camera permission denied or camera unavailable.";
 
                     }
-                );
+
+                }
+            );
 
 
-                document.getElementById(
-                    "attendanceMessage"
-                ).innerText =
-                    "Attendance marked successfully!";
+        /* ==============================
+           CAPTURE FACE
+        =============================== */
+
+        document
+            .getElementById("captureBtn")
+            .addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        !camera.videoWidth ||
+                        !camera.videoHeight
+                    ) {
+
+                        document.getElementById(
+                            "faceMessage"
+                        ).innerText =
+                            "Please start the camera first.";
+
+                        return;
+                    }
 
 
-            } catch (error) {
+                    const canvas =
+                        document.getElementById(
+                            "canvas"
+                        );
 
-                console.error(error);
 
-                document.getElementById(
-                    "attendanceMessage"
-                ).innerText =
-                    "Error marking attendance.";
+                    canvas.width =
+                        camera.videoWidth;
+
+
+                    canvas.height =
+                        camera.videoHeight;
+
+
+                    const context =
+                        canvas.getContext("2d");
+
+
+                    context.drawImage(
+                        camera,
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height
+                    );
+
+
+                    document.getElementById(
+                        "faceMessage"
+                    ).innerText =
+                        "Face captured successfully.";
+
+                }
+            );
+
+
+        /* ==============================
+           MARK ATTENDANCE
+        =============================== */
+
+        document
+            .getElementById("attendanceBtn")
+            .addEventListener(
+                "click",
+                async () => {
+
+                    const name =
+                        document.getElementById(
+                            "studentName"
+                        ).value.trim();
+
+
+                    const studentId =
+                        document.getElementById(
+                            "studentId"
+                        ).value.trim();
+
+
+                    const message =
+                        document.getElementById(
+                            "attendanceMessage"
+                        );
+
+
+                    if (!name || !studentId) {
+
+                        message.innerText =
+                            "Enter student details first.";
+
+                        return;
+                    }
+
+
+                    try {
+
+                        const now =
+                            new Date();
+
+
+                        await addDoc(
+                            collection(
+                                db,
+                                "attendance"
+                            ),
+                            {
+
+                                name: name,
+
+                                studentId:
+                                    studentId,
+
+                                date:
+                                    now.toLocaleDateString(),
+
+                                time:
+                                    now.toLocaleTimeString(),
+
+                                status:
+                                    "Present",
+
+                                userId:
+                                    auth.currentUser.uid,
+
+                                email:
+                                    auth.currentUser.email,
+
+                                createdAt:
+                                    serverTimestamp()
+
+                            }
+                        );
+
+
+                        message.innerText =
+                            "Attendance marked successfully!";
+
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        message.innerText =
+                            "Error marking attendance.";
+
+                    }
+
+                }
+            );
+
+
+        /* ==============================
+           LOAD ATTENDANCE
+        =============================== */
+
+        document
+            .getElementById("loadAttendanceBtn")
+            .addEventListener(
+                "click",
+                async () => {
+
+                    const table =
+                        document.getElementById(
+                            "attendanceTable"
+                        );
+
+
+                    table.innerHTML = "";
+
+
+                    try {
+
+                        const q =
+                            query(
+                                collection(
+                                    db,
+                                    "attendance"
+                                ),
+                                orderBy(
+                                    "createdAt",
+                                    "desc"
+                                )
+                            );
+
+
+                        const snapshot =
+                            await getDocs(q);
+
+
+                        if (snapshot.empty) {
+
+                            table.innerHTML = `
+                                <tr>
+                                    <td colspan="5">
+                                        No attendance records found.
+                                    </td>
+                                </tr>
+                            `;
+
+                            return;
+                        }
+
+
+                        snapshot.forEach(
+                            (doc) => {
+
+                                const data =
+                                    doc.data();
+
+
+                                const row =
+                                    document
+                                        .createElement(
+                                            "tr"
+                                        );
+
+
+                                row.innerHTML = `
+
+                                    <td>
+                                        ${data.name || ""}
+                                    </td>
+
+                                    <td>
+                                        ${data.studentId || ""}
+                                    </td>
+
+                                    <td>
+                                        ${data.date || ""}
+                                    </td>
+
+                                    <td>
+                                        ${data.time || ""}
+                                    </td>
+
+                                    <td>
+                                        ${data.status || ""}
+                                    </td>
+
+                                `;
+
+
+                                table.appendChild(
+                                    row
+                                );
+
+                            }
+                        );
+
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        table.innerHTML = `
+                            <tr>
+                                <td colspan="5">
+                                    Unable to load attendance.
+                                </td>
+                            </tr>
+                        `;
+
+                    }
+
+                }
+            );
+
+
+        /* ==============================
+           LOGOUT
+        =============================== */
+
+        logoutBtn.addEventListener(
+            "click",
+            async () => {
+
+                try {
+
+                    /* Stop camera */
+
+                    if (stream) {
+
+                        stream
+                            .getTracks()
+                            .forEach(
+                                track => track.stop()
+                            );
+
+                        stream = null;
+
+                        camera.srcObject =
+                            null;
+                    }
+
+
+                    await signOut(auth);
+
+
+                    /* Clear form fields */
+
+                    loginEmail.value = "";
+                    loginPassword.value = "";
+
+                    registerEmail.value = "";
+                    registerPassword.value = "";
+                    confirmPassword.value = "";
+
+                    document.getElementById(
+                        "studentName"
+                    ).value = "";
+
+                    document.getElementById(
+                        "studentId"
+                    ).value = "";
+
+
+                    document.getElementById(
+                        "studentMessage"
+                    ).innerText = "";
+
+                    document.getElementById(
+                        "faceMessage"
+                    ).innerText = "";
+
+                    document.getElementById(
+                        "attendanceMessage"
+                    ).innerText = "";
+
+
+                } catch (error) {
+
+                    console.error(error);
+
+                }
 
             }
+        );
 
-        });
-
-
-    /* ==============================
-       LOAD ATTENDANCE
-    ============================== */
-
-    document
-        .getElementById("loadAttendanceBtn")
-        .addEventListener("click", async () => {
-
-            const table =
-                document.getElementById(
-                    "attendanceTable"
-                );
-
-            table.innerHTML = "";
-
-            try {
-
-                const q = query(
-                    collection(db, "attendance"),
-                    orderBy("createdAt", "desc")
-                );
-
-                const snapshot =
-                    await getDocs(q);
-
-
-                snapshot.forEach((doc) => {
-
-                    const data = doc.data();
-
-                    const row =
-                        document.createElement("tr");
-
-                    row.innerHTML = `
-
-                        <td>${data.name || ""}</td>
-
-                        <td>${data.studentId || ""}</td>
-
-                        <td>${data.date || ""}</td>
-
-                        <td>${data.time || ""}</td>
-
-                        <td>${data.status || ""}</td>
-
-                    `;
-
-                    table.appendChild(row);
-
-                });
-
-            } catch (error) {
-
-                console.error(error);
-
-                table.innerHTML = `
-                    <tr>
-                        <td colspan="5">
-                            Unable to load attendance.
-                        </td>
-                    </tr>
-                `;
-
-            }
-
-        });
-
-
-    /* ==============================
-       LOGOUT
-    ============================== */
-
-    logoutBtn.addEventListener("click", async () => {
-
-        try {
-
-            await signOut(auth);
-
-            alert("Logged out successfully.");
-
-        } catch (error) {
-
-            console.error(error);
-
-        }
-
-    });
-
-</script>
+    </script>
 
 </body>
-</html>
 
+</html>
+```
